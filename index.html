@@ -1,0 +1,212 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+        <meta charset="utf-8" /> 
+        <style>
+            body{
+                background-color: #000033;
+            }
+            h1{
+                font-family: Faster One;
+                font-size: 100px;
+                text-align: center;
+            }
+            h2{
+                color:white;
+                font-family: Faster One;
+                font-size: 100px;
+                text-align: center;
+                margin: 20px;
+            }
+            #gameZone{
+                display: none;
+                position:absolute;
+                top:0px;
+                left:0px;
+            }
+            #LoadingMessage{
+                color: white;
+            }
+            #options{
+                width : 800px;
+                height: 600px;
+                position: absolute;
+                margin: 0;
+/*
+                top: 50%;
+                left: 50%;
+                -ms-transform: translate(-50%, -50%);
+                transform: translate(-50%, -50%);
+*/
+                font-family: Bungee Shade;
+                font-size: 25px;
+                color: yellow;
+                display: none;
+            }
+            #options > table{
+                display: inline-block;
+                margin-top: auto;
+                vertical-align: middle;
+                margin-left:50px;
+            }
+            #options > p{
+                color: yellow;
+                font-family: Bungee Shade;
+                font-size: 18px;
+                text-align: center;
+            }
+            .controlButton{
+                background-color: yellow;
+                display: block;
+                margin: auto;
+                width: 90px;
+                font-size: 15px;
+            }
+            .menuButton{
+                background-color: black;
+                display: block;
+                margin: auto;
+                width: 300px;
+/*                height: 80px;*/
+                margin-top: 20px;
+                font-size: 30px;
+                font-family: Bungee Shade;
+                color:inherit;
+                border-radius: 25px;
+                box-shadow: 3px 3px white; 
+                border:1px solid white;
+                line-height: 60px;
+            }
+            .menuButton:hover {
+                background-color: #101010;
+/*
+                box-shadow: 2px 2px white;
+                transform: translate(1px, 1px);
+*/
+            }
+            .menuButton:active {
+                background-color: #101010;
+                box-shadow: 0px 0px white;
+                transform: translate(3px, 3px);
+            }
+            #mainMenu{
+                color:yellow;
+                position: absolute;
+                margin: 0;
+                top: 50%;
+                left: 50%;
+                -ms-transform: translate(-50%, -50%);
+                transform: translate(-50%, -50%);
+            }
+            #variables{
+                position: absolute;
+                margin: 0;
+                /*top: 50%;
+                left: 50%;*/
+                /*-ms-transform: translate(-50%, -50%);
+                transform: translate(-50%, -50%);*/
+            }
+            .weaponIcon{
+                height: 30px;
+                position: relative;
+                display: block;
+                top:50%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .switch {
+                position: relative;
+                display: block;
+                top:50%;
+                width: 50px;
+                height: 28px;
+            }
+
+            /* Hide default HTML checkbox */
+            .switch input {
+              opacity: 0;
+              width: 0;
+              height: 0;
+            }
+
+            /* The slider */
+            .slider {
+              position: absolute;
+              cursor: pointer;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background-color: #111111;
+              -webkit-transition: .3s;
+              transition: .3s;
+            }
+
+            .slider:before {
+              position: absolute;
+              content: "";
+              height: 22px;
+              width: 22px;
+              left: 4px;
+              bottom: 3px;
+              background-color: white;
+              -webkit-transition: .2s;
+              transition: .2s;
+            }
+
+            input:checked + .slider {
+              background-color: turquoise;
+            }
+
+/*
+            input:focus + .slider {
+              box-shadow: 0 0 1px turquoise;
+            }
+*/
+
+            input:checked + .slider:before {
+              -webkit-transform: translateX(20px);
+              -ms-transform: translateX(20px);
+              transform: translateX(20px);
+            }
+
+            /* Rounded sliders */
+            .slider.round {
+              border-radius: 30px;
+            }
+
+            .slider.round:before {
+              border-radius: 50%;
+            }
+            #controlsTable tr{
+                height: 45px;
+                line-height: 45px;
+            }
+            #controlsTable td{
+                height: 45px;
+                line-height: 45px;
+            }
+        </style>
+          <script src="https://unpkg.com/mathjs/dist/math.min.js"></script>
+
+        <title>Flat Earth?</title>
+        <link href="https://fonts.googleapis.com/css?family=Bungee+Shade|Faster+One|Monoton" rel="stylesheet">
+    <head>
+    <body>
+        <canvas id="gameZone">
+        </canvas>
+        <div id="variables"></div>
+        <div id="mainMenu">
+        <h1>Flat<br>Earth?</h1>
+            <button id="gameStart" class="menuButton">Start</button>
+            <button id="openOptions" class="menuButton">Options</button>
+        </div>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>-->
+        <!--<script src="jquery.js"></script>-->
+        <p id="LoadingMessage"><span style="font-family: Faster One; font-size:100px; ">L</span><span style = "font-family: Bungee Shade; font-size:40px; ">oading</span><span style="font-family: Monoton; font-size:30px;" >...</span></p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.1.4/synaptic.js"></script>     
+    <script src=Main.js></script>        
+
+    </script>
+    </body>
+</html>
