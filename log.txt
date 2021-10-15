@@ -1,0 +1,6 @@
+Tournament number 40.
+Games between 0 and the rest concluded.
+Games between 1 and the rest concluded.
+Games between 2 and the rest concluded.
+Games between 3 and the rest concluded.
+Games between 4 and the rest concluded.
