@@ -13,14 +13,9 @@ if (typeof window === 'undefined') {
   displayingGraphics = true;
 } */
 
-import { create, all } from 'mathjs'
+import math = require('mathjs');
 
-const config = { }
-const math = create(all, config)
-
-
-
-console.log(math.sqrt(-4).toString()) // 2i
+console.log(math.sqrt(-4).toString()); // 2i
 
 
 const testing = true;
@@ -62,7 +57,7 @@ window.onload = function() {
  * What to do once we have fonts
  */
 function finishLoading() {
-  let messageObj = document.getElementById('LoadingMessage') as HTMLElement;
+  const messageObj = document.getElementById('LoadingMessage') as HTMLElement;
   messageObj.style.color = '#000033';
   const g = new GameStatus(); // g for game
   g.area.style.display = 'inline';
@@ -168,7 +163,6 @@ class GameStatus {
   }
 
 
-
   /**
    * Finds the pixel coordinates from top and bottom of a given complex number
    * TODO rename to pixToZ
@@ -202,22 +196,19 @@ class GameStatus {
     drawObj(new Thing(new Cx(0, 0), 'Player'), this, u);
     /* drawObj(new thing(new cx(1,0), "Player"), g, u);
       drawObj(new thing(new cx(0,1), "Player"), g, u);*/
-    for (const o in u.objectList) {
-      drawObj(u.objectList[o], this, u);
-    }
-    for (const w in u.domain.walls) {
-      u.domain.walls[w].draw(this);
-    }
-    /* for (let w in u.wallList){
-          drawWall(u.wallList[w], g, u);
-      }*/
+    u.objectList.forEach((o) =>
+      drawObj(o, this, u),
+    );
+    u.domain.walls.forEach((wall) =>
+      wall.draw(this),
+    );
   }
 
   /**
    * Start the looping (this function runs once)
    */
   startTheGame() {
-    let menu = document.getElementById('mainMenu') as HTMLElement;
+    const menu = document.getElementById('mainMenu') as HTMLElement;
     menu.style.display = 'none';
     const u = new UniverseInfo();
     makeChangeable(u.curvature, 'g_input');
@@ -263,7 +254,7 @@ class GameStatus {
     this.ctx.fillStyle = 'black';
     this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
     this.scene = 'menu';
-    let menu = document.getElementById('mainMenu') as HTMLElement
+    const menu = document.getElementById('mainMenu') as HTMLElement;
     menu.style.display = '';
   }
 }
@@ -301,14 +292,14 @@ function setResizeListener(g: GameStatus) {
  * @param {GameStatus} g
  */
 function mainMenuListeners(g: GameStatus) {
-  let startButton =   document.getElementById('gameStart') as HTMLElement;
+  const startButton = document.getElementById('gameStart') as HTMLElement;
   startButton.addEventListener('click', function(e) {
     g.startTheGame();
   });
-  let optionsButton = document.getElementById('openOptions') as HTMLElement;
+  const optionsButton = document.getElementById('openOptions') as HTMLElement;
   optionsButton.addEventListener('click', function() {
-        // showOptions(g, u);
-      });
+    // showOptions(g, u);
+  });
 }
 
 /**
@@ -339,7 +330,6 @@ function setKeyListeners(g: GameStatus) {
   };
 
   window.onkeypress = function() {
-    debugger;
     if (g.scene =='GameOver') {
       if (g.keysList[keyCodes.rKey]) {
         g.startTheGame();
@@ -358,7 +348,7 @@ function setKeyListeners(g: GameStatus) {
     }
     if (g.scene =='options' || g.scene =='credits') {
       if (g.keysList[keyCodes.mKey]) {
-        let options = document.getElementById('options') as HTMLElement
+        const options = document.getElementById('options') as HTMLElement;
         options.style.display = 'none';
         g.showMenu();
       }
@@ -423,12 +413,16 @@ class Cx {
    * @param {number} b Complex part
    */
   constructor(a: number, b: number) {
-      this.re = a;
-      this.im = b;
+    this.re = a;
+    this.im = b;
   };
 
+  /**
+   *
+   * @return {boolean} Is it infinity?
+   */
   isInfty() : boolean {
-    return isFinite(this.re);
+    return !isFinite(this.re);
   }
 
   /**
@@ -649,7 +643,7 @@ class Cx {
    */
   static matrix(A: CxLikeMatrix): CxMatrix {
     return [[Cx.makeNew(A[0][0]), Cx.makeNew(A[0][1])],
-          [Cx.makeNew(A[1][0]), Cx.makeNew(A[1][1])]  ];
+      [Cx.makeNew(A[1][0]), Cx.makeNew(A[1][1])]];
   }
   /**
    * A complex number chosen uniformly in a bound x bound box
@@ -672,7 +666,8 @@ class Cx {
  * @param {number} code
  * @return {string} The string to name this key e.g. "tab"
  */
-function stringFromCharCode(code: number): string { // eslint-disable-line no-unused-vars
+function stringFromCharCode(code: number):// eslint-disable-line no-unused-vars
+string {
   if (code == keyCodes.leftKey) {
     return 'Left';
   } else if (code == keyCodes.rightKey) {
@@ -702,7 +697,8 @@ function stringFromCharCode(code: number): string { // eslint-disable-line no-un
  * @param {MouseEvent} evt The mousemove event
  * @return {[number, number]} distance from left and top in pixels
  */
-function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent): [number, number] {
+function getMousePos(canvas: HTMLCanvasElement,
+    evt: MouseEvent): [number, number] {
   const rect = canvas.getBoundingClientRect();
   return [evt.clientX - rect.left, evt.clientY - rect.top];
 }
@@ -751,7 +747,11 @@ class KeySet {
    * @param {number} fire
    * @param {number} special
    */
-  constructor(moveLeft: number, moveRight: number, thrust: number, fire: number, special: number) {
+  constructor(moveLeft: number,
+      moveRight: number,
+      thrust: number,
+      fire: number,
+      special: number) {
     this.moveLeft = moveLeft;
     this.moveRight = moveRight;
     this.thrust = thrust;
@@ -868,15 +868,12 @@ class UniverseInfo {
     this.setSpeed(g);
     const M = findMobius(this.speed, this.curvature); // / sends speed to 0
     if (!this.speed.isZero() && !isNaN(M.matrix[1][0].re)) {
-      for (const o in this.objectList) {
-        this.objectList[o].pos = this.objectList[o].pos.mobius(M);
-        //            if(isNaN(this.objectList[o].pos.re)){
-        //                debugger;
-        //            }
-      }
-      for (const w in this.wallList) {
-        this.wallList[w].moveBy(M);
-      }
+      this.objectList.forEach((o) =>
+        o.pos = o.pos.mobius(M),
+      );
+      this.wallList.forEach((w) =>
+        w.moveBy(M),
+      );
       this.domain.move(M);
       this.domain.reset();
     }
@@ -1040,11 +1037,11 @@ TODO rename the word Mobius from these functions!!
  */
 function conjugateMatrix(M: CxMatrix): CxMatrix { // Conjugate every term
   const A = Cx.matrix([[1, 0], [0, 1]]);
-  for (const i in M) {
-    for (const j in M) {
-      A[i][j] = M[i][j].cong();
-    }
-  }
+  M.forEach((row, i) =>
+    row.forEach((entry, j) =>
+      A[i][j] = entry.cong(),
+    ),
+  );
   return A;
 }
 
@@ -1135,8 +1132,10 @@ class Wall {
 
   /**
    * computes the center and the radius or evaluates isStraight
+   * @return {[boolean, Cx, number]}
+   * If it is a straight line, we get the center and the radius to be infinite
    */
-  computeThings() : [boolean, Cx, number]{
+  computeThings() : [boolean, Cx, number] {
     let isStraight : boolean;
     let center : Cx;
     let radius : number;
@@ -1153,7 +1152,7 @@ class Wall {
       center = Cx.infty();
       radius = Infinity;
     }
-    return [isStraight, center, radius]
+    return [isStraight, center, radius];
   };
 
   /**
@@ -1262,7 +1261,9 @@ class Polygon {
  * @param {number} curvature - curvature?
  * @return {Polygon}
  */
-  static fromVerticesAndTransf(vertices: Array<Cx>, transf: Array<Mobius>, curvature: number): Polygon {
+  static fromVerticesAndTransf(vertices: Array<Cx>,
+      transf: Array<Mobius>,
+      curvature: number): Polygon {
     // Z is an array of the vertices, and T[i] is the Mobius transformation
     // you should do if you cross past Z[i] -- Z[i+1]
     const walls = [];
@@ -1294,12 +1295,12 @@ class Polygon {
    * @param {Mobius} M
    */
   move(M: Mobius) {
-    for (const i in this.walls) {
-      this.walls[i].moveBy(M);
-    }
-    for (const i in this.transf) {
-      this.transf[i] = this.transf[i].mobiusConjugate(M);
-    }
+    this.walls.forEach((w) =>
+      w.moveBy(M),
+    );
+    this.transf.forEach((T) =>
+      T = T.mobiusConjugate(M),
+    );
   }
 
   /**
@@ -1351,7 +1352,11 @@ function getImageSources() {
  * @param {number} rotation Clockwise
  * @param {GameStatus} g - g
  */
-function drawImage(img: HTMLImageElement, center: Cx, radius: number, rotation: number, g: GameStatus) {
+function drawImage(img: HTMLImageElement,
+    center: Cx,
+    radius: number,
+    rotation: number,
+    g: GameStatus) {
   // //the radius is the average of the width and the height
   const position = g.coordToPix(center);
   const scale = 2 * radius/(img.width + img.height);
