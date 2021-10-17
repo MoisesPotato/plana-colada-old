@@ -14,5 +14,6 @@
         "@typescript-eslint"
     ],
     "rules": {
+        "linebreak-style":"off"
     }
 }

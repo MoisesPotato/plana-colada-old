@@ -269,6 +269,25 @@ export class Cx {
   isZeroOrInfty():boolean {
     return (this.isZero() || this.isInfty());
   }
+
+  /**
+   *Is it the same?? can run
+   this.compare(cx), (re) or (re, im)
+   * @param {Cx|number} z
+   * @param {number} [b=0]
+   * @return {boolean}
+   */
+  compare(z:Cx|number, b:number = 0):boolean {
+    let re; let im:number;
+    if (typeof z == 'number') {
+      re = z;
+      im = b;
+    } else {
+      re = z.re;
+      im = z.im;
+    }
+    return (this.re === re && this.im === im);
+  }
 }
 
 
