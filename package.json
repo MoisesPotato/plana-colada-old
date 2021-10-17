@@ -1,6 +1,12 @@
 {
   "name": "plana-colada",
   "version": "1.0.0",
+  "repository": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/MoisesPotato/plana-colada"
+    }
+  },
   "description": "I don't know what game this is, but it's 2d and it's a strange world",
   "main": "Main.js",
   "scripts": {
@@ -12,10 +18,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/preset-typescript": "^7.15.0",
+    "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
+    "jest": "^27.2.5",
+    "ts-jest": "^27.0.7",
     "typescript": "^4.4.4"
   },
   "dependencies": {
@@ -25,10 +35,9 @@
   "ignorePatterns": [
     "dist/*"
   ],
-
   "typeAcquisition": {
     "include": [
-        "jest"
+      "jest"
     ]
-}
+  }
 }

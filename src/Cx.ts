@@ -20,14 +20,13 @@ export class Cx {
    * @param {number} b Complex part
    */
   constructor(a: number, b: number) {
-    if ( a === -Infinity) {
+    if ( !isFinite(a) || !isFinite(b)) {
       a = Infinity;
-    }
-    if (b === -Infinity) {
       b = Infinity;
     }
     this.re = a;
     this.im = b;
+    Object.freeze(this);
   };
 
   /**
@@ -74,11 +73,7 @@ export class Cx {
    * @return {boolean}
    */
   isZero(): boolean {
-    if (this.re === 0 && this.im === 0 && !this.isInfty()) {
-      return true;
-    } else {
-      return false;
-    }
+    return this.compare(0);
   };
 
   /**
