@@ -4,8 +4,8 @@
   "description": "I don't know what game this is, but it's 2d and it's a strange world",
   "main": "Main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "browserify": "watchify ./dist/Main.js -o ./dist/Bundle.js",
+    "test": "jest --watchAll --verbose",
+    "brows": "watchify ./dist/Main.js -o ./dist/Bundle.js",
     "tsc": "tsc"
   },
   "keywords": [],
@@ -16,7 +16,6 @@
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.2.6",
     "typescript": "^4.4.4"
   },
   "dependencies": {
@@ -25,5 +24,11 @@
   },
   "ignorePatterns": [
     "dist/*"
-  ]
+  ],
+
+  "typeAcquisition": {
+    "include": [
+        "jest"
+    ]
+}
 }

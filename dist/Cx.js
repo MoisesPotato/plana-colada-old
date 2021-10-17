@@ -256,5 +256,25 @@ class Cx {
     isZeroOrInfty() {
         return (this.isZero() || this.isInfty());
     }
+    /**
+     *Is it the same?? can run
+     this.compare(cx), (re) or (re, im)
+     * @param {Cx|number} z
+     * @param {number} [b=0]
+     * @return {boolean}
+     */
+    compare(z, b = 0) {
+        let re;
+        let im;
+        if (typeof z == 'number') {
+            re = z;
+            im = b;
+        }
+        else {
+            re = z.re;
+            im = z.im;
+        }
+        return (this.re === re && this.im === im);
+    }
 }
 exports.Cx = Cx;
