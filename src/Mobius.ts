@@ -23,6 +23,9 @@ export class Mobius {
     this.cong = cong;
   }
 
+  /* TODO Maybe use three coordinates from spherical orbifolds
+in order to avoid huge numbers around the north pole?
+ */
   /**
    * Composition of Mobius tranformations.
    * @param {Mobius} M2
