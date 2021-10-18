@@ -19,18 +19,19 @@ export class CW {
   }
 }
 
+
 /**
  *
  */
-export class Cell<FaceType> {
+export class Cell {
   name:string;
-  attachingMap:Attach<FaceType>;
+  attachingMap:Attach;
   /**
  *
  * @param name label
  * @param attachingMap attaching map
  */
-  constructor(name: string, attachingMap: Attach<FaceType>) {
+  constructor(name: string, attachingMap: Attach) {
     this.name = name;
     this.attachingMap = attachingMap;
   }
@@ -56,7 +57,7 @@ export class Cell<FaceType> {
    * @param c another cell
    * @returns true or false
    */
-  equals(c:Cell<FaceType>):boolean {
+  equals(c:Cell):boolean {
     if (this.dim !== c.dim) {
       return false;
     }
@@ -72,7 +73,7 @@ export class Cell<FaceType> {
  * @param list an array of cells
  * @returns an array of just the nonrepeated cells
  */
-  static removeDuplicates<T extends Cell<FaceType>, FaceType>(list:T[]):T[] {
+  static removeDuplicates<T extends Cell>(list:T[]):T[] {
     if (list.length == 0) {
       return list;
     }
@@ -90,7 +91,7 @@ export class Cell<FaceType> {
    * @param list list of cells
    * @returns is this cell on that list?
    */
-  inList(list:Cell<FaceType>[]):boolean {
+  inList(list:Cell[]):boolean {
     let answer = false;
     list.forEach((c)=>{
       if (this.equals(c)) {
@@ -99,6 +100,17 @@ export class Cell<FaceType> {
     });
     return answer;
   }
+
+  /**
+   * You should never call this function,
+   * since each type of cell has its own method
+   * @param glued you should never call this
+   * @param newCell you should never call this
+   * @return void
+   */
+  glue0(glued:typeof this[], newCell:typeof this):typeof this {
+    throw new Error('Glueing dimensionless cell');
+  }
 }
 
 
@@ -106,21 +118,22 @@ export class Cell<FaceType> {
  * @property {Cell1[]} cells1
  * @property {Cell2[]} cells2
  */
-export class Cell2 extends Cell<Cell1> {
+export class Cell2 extends Cell {
   cells1:Cell1[];
   cells0:Cell0[];
 
   /**
    *@param name label
-   * @param {Attach} attachingMap - Array of maps to 1-cells
-   * @param {Cell1[]} cells1 - set of 1-cells
-   * @param {Cell0[]} cells0 - set of 0-cells
+   * @param attachingMap - Array of maps to 1-cells
+   * @param cells1 - set of 1-cells
+   * @param cells0 - set of 0-cells
    */
   constructor(name: string,
-      attachingMap: Attach<Cell1>,
+      attachingMap: Attach,
       cells1: Cell1[],
       cells0: Cell0[]) {
     super(name, attachingMap);
+    this.attachingMap as Attach;
     this.cells1 = cells1;
     this.cells0 = cells0;
   }
@@ -132,8 +145,8 @@ export class Cell2 extends Cell<Cell1> {
    * @param maps list of attaching maps from 1-cells to 0-cells
    * @returns a 2-cell
    */
-  static fromGlue(name: string, edges:Cell1[], maps:Attach<Cell1>):Cell2 {
-    const attachingMap = new Attach<Cell1>(2, [] );
+  static fromGlue(name: string, edges:Cell1[], maps:Attach):Cell2 {
+    const attachingMap = new Attach(2, [] );
     const cells1 = edges;
     const cells0 = [] as Cell0[];
     return new Cell2(name, attachingMap, cells1, cells0);
@@ -148,7 +161,7 @@ export class Cell2 extends Cell<Cell1> {
   static disk(n:number, name:string = ''):Cell2 {
     const edges = Cell1.circle(n, name);
     const vertices = edges.map((e)=> e.start);
-    const attachingMap = new Attach<Cell1>(2, edges);
+    const attachingMap = new Attach(2, edges);
     return new Cell2(name, attachingMap, edges, vertices);
   }
 
@@ -177,8 +190,8 @@ export class Cell2 extends Cell<Cell1> {
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:Cell0[], newCell:Cell0):Cell2 {
-    const output = this.copy();
+  glue0(glued:Cell0[], newCell:Cell0):typeof this {
+    const output = this.copy() as typeof this;
     // Change its vertices to the new cell if needbe
     output.cells0 = output.cells0.map((v) => v.glue0( glued, newCell));
     output.cells0 = Cell.removeDuplicates(output.cells0);
@@ -211,7 +224,6 @@ export class Cell2 extends Cell<Cell1> {
  */
 export class Cell1 extends Cell {
   cells0:Cell0[];
-  attachingMap:Attach;
 
   /**
    * @param name label
@@ -220,8 +232,8 @@ export class Cell1 extends Cell {
    */
   constructor(name:string, cells0: Cell0[], attachingMap:Attach) {
     super(name, attachingMap);
+    this.attachingMap as Attach;
     this.cells0 = cells0;
-    this.attachingMap = attachingMap;
     if (!this.validate()) {
       const message = 'Invalid edge definition\n'+
       'vertices:\n'+
@@ -323,10 +335,10 @@ export class Cell1 extends Cell {
    * NOT RECURSIVE COPY!!
    * @returns a copy of this cell WITH THE SAME VERTICES!
    */
-  copy():Cell1 {
+  copy():typeof this {
     const [...targets] = this.attachingMap.targets;
     const A = new Attach(1, targets);
-    return new Cell1(this.name, [...this.cells0], A);
+    return new Cell1(this.name, [...this.cells0], A) as typeof this;
   }
 
   /**
@@ -339,7 +351,7 @@ export class Cell1 extends Cell {
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:Cell0[], newCell:Cell0):Cell1 {
+  glue0(glued:Cell0[], newCell:Cell0):typeof this {
     // console.log('\x1b[36m%s\x1b[0m', `Glueing ${c.toString()}`);
     const output = this.copy();
     // Change its vertices to the new cell if needbe
@@ -401,7 +413,7 @@ export class Cell0 extends Cell {
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:Cell0[], newCell:Cell0):Cell0 {
+  glue0(glued:typeof this[], newCell:typeof this):typeof this {
     // If c is the vertex, just replace it
     if (this.inList(glued)) {
       return newCell;
@@ -417,9 +429,9 @@ export class Cell0 extends Cell {
  * i.e. does the 1-cell go counterclockwise around the 2-cell? (for 1->0
  * cells this is just true always
  */
-export class Attach<FaceType> {
+export class Attach {
   dim: number;
-  targets: FaceType[];
+  targets: Cell[];
   oriented: boolean[];
 
   /**
@@ -435,7 +447,9 @@ export class Attach<FaceType> {
    * @param targets to
    * @param oriented preserves orientation
    */
-  constructor(dim: number, targets: Cell[], oriented?: boolean[]) {
+  constructor(dim: number,
+      targets: Cell[],
+      oriented?: boolean[]) {
     oriented = oriented || targets.map((x) => true);
     this.dim = dim;
     this.targets = targets;
