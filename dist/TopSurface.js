@@ -89,6 +89,16 @@ class Cell {
         });
         return answer;
     }
+    /**
+     * You should never call this function,
+     * since each type of cell has its own method
+     * @param glued you should never call this
+     * @param newCell you should never call this
+     * @return void
+     */
+    glue0(glued, newCell) {
+        throw new Error('Glueing dimensionless cell');
+    }
 }
 exports.Cell = Cell;
 /**
@@ -98,12 +108,13 @@ exports.Cell = Cell;
 class Cell2 extends Cell {
     /**
      *@param name label
-     * @param {Attach} attachingMap - Array of maps to 1-cells
-     * @param {Cell1[]} cells1 - set of 1-cells
-     * @param {Cell0[]} cells0 - set of 0-cells
+     * @param attachingMap - Array of maps to 1-cells
+     * @param cells1 - set of 1-cells
+     * @param cells0 - set of 0-cells
      */
     constructor(name, attachingMap, cells1, cells0) {
         super(name, attachingMap);
+        this.attachingMap;
         this.cells1 = cells1;
         this.cells0 = cells0;
     }
@@ -188,8 +199,8 @@ class Cell1 extends Cell {
      */
     constructor(name, cells0, attachingMap) {
         super(name, attachingMap);
+        this.attachingMap;
         this.cells0 = cells0;
-        this.attachingMap = attachingMap;
         if (!this.validate()) {
             const message = 'Invalid edge definition\n' +
                 'vertices:\n' +
