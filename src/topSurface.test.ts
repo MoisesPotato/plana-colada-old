@@ -2,6 +2,34 @@
 // eslint-disable-next-line no-unused-vars
 import {Attach, Cell, Cell0, Cell1, Cell2} from './TopSurface';
 
+/**
+ *
+ * @param c A square
+ * @param name the name of the square
+ * @param e The names of the desired edges
+ * @param v the names of the desired vertices
+ * @returns do the labels indeed match
+ */
+function checkSquareLabels(c:Cell2, name:string,
+    e:string[],
+    v:string[]):void {
+  const n = e.length;
+  v.forEach((x, i) =>{
+    expect(c.cells1[i].toString())
+        .toBe(`${e[i]}: ${v[i]} ---> ${v[(i + 1) % n]}`);
+    expect(c.cells1[i].start.toString())
+        .toBe(`${v[i]}`);
+    expect(c.cells1[i].end.toString())
+        .toBe(`${v[(i + 1) % n]}`);
+  });
+  expect(c.name).toBe(name);
+  expect(c.attachingMap.dim).toBe(2);
+  expect(c.attachingMap.isValid()[0]).toBe(true);
+  expect(c.attachingMap.oriented).toEqual(Array(4).fill(true));
+  expect(c.attachingMap.targets).toEqual(c.cells1);
+}
+
+
 describe(('0 cells '), () => {
   it('have names', ()=> {
     const v = new Cell0('A');
@@ -42,20 +70,19 @@ describe('Cell can be glued', () => {
   const v1 = new Cell0('a');
   const v2 = new Cell0('b');
   const e1 = Cell1.v1v2('e1');
-  const e2 = Cell1.v1v2('e2', 'a', 'a');
   const D = Cell2.disk(4, 'D');
   it('0-cells in 0-cells', ()=>{
-    expect(v1.glue0( [v1], v2)).toEqual(v2);
-    expect(v1.glue0( [v2], v1)).toEqual(v1);
-    expect(v1.glue0( [v2], v2)).toEqual(v1);
-    expect(v1.glue0( [v1, v2], v2)).toEqual(v2);
-    expect(v1.glue0( [], v2)).toEqual(v1);
+    expect(v1.glue0in0( [v1], v2)).toEqual(v2);
+    expect(v1.glue0in0( [v2], v1)).toEqual(v1);
+    expect(v1.glue0in0( [v2], v2)).toEqual(v1);
+    expect(v1.glue0in0( [v1, v2], v2)).toEqual(v2);
+    expect(v1.glue0in0( [], v2)).toEqual(v1);
   } );
 
   it('0-cells in 1-cells', () => {
     console.log(`e1: ${e1.toString()}`);
 
-    const e3 = e1.glue0( [], v1);
+    const e3 = e1.glue0in1( [], v1);
 
     // console.log('Made e3');
     // console.log(`e1: ${e1.toString()}`);
@@ -63,7 +90,7 @@ describe('Cell can be glued', () => {
     expect(e3).toEqual(e1);
     expect(e1.start.toString()).toEqual('e1-start');
 
-    const e4 = e1.glue0( [e1.start, e1.end], e1.start);
+    const e4 = e1.glue0in1( [e1.start, e1.end], e1.start);
     expect(e4.cells0);
     expect(e4.start).toEqual(e1.start);
     expect(e4.cells0).toEqual([e1.start]);
@@ -75,11 +102,11 @@ describe('Cell can be glued', () => {
 
     // console.log('Made e4');
     // console.log(`e1: ${e1.toString()}`);
-    let e5= e1.glue0( [e1.end], v2);
+    let e5= e1.glue0in1( [e1.end], v2);
     expect(e5.start).toEqual(e1.start);
     expect(e5.end).toEqual(v2);
     // console.log(`e5: ${e5.toString()}`);
-    e5= e5.glue0( [e1.start], v1);
+    e5= e5.glue0in1( [e1.start], v1);
     // console.log(`e5: ${e5.toString()}`);
     expect(e5.start).toEqual(v1);
     expect(e5.end).toEqual(v2);
@@ -89,49 +116,45 @@ describe('Cell can be glued', () => {
   });
 
   it('0-cells in 2-cells', () => {
-    const D2 = D.glue0([D.cells0[0]], v1);
-
-    expect(D2.cells1[0].toString()).toBe('D-e0: a ---> D-v1');
-    expect(D2.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
-    expect(D2.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
-    expect(D2.cells1[3].toString()).toBe('D-e3: D-v3 ---> a');
-    expect(D2.cells0[0].toString()).toBe('a');
-    expect(D2.cells0[1].toString()).toBe('D-v1');
-    expect(D2.cells0[2].toString()).toBe('D-v2');
-    expect(D2.cells0[3].toString()).toBe('D-v3');
-    expect(D2.cells1[0].start.toString()).toBe('a');
-    expect(D2.cells1[1].start.toString()).toBe('D-v1');
-    expect(D2.cells1[2].start.toString()).toBe('D-v2');
-    expect(D2.cells1[3].start.toString()).toBe('D-v3');
-    expect(D2.cells1[0].end.toString()).toBe('D-v1');
-    expect(D2.cells1[1].end.toString()).toBe('D-v2');
-    expect(D2.cells1[2].end.toString()).toBe('D-v3');
-    expect(D2.cells1[3].end.toString()).toBe('a');
-    expect(D2.attachingMap.dim).toBe(2);
-    expect(D2.attachingMap.isValid()[0]).toBe(true);
-    expect(D2.attachingMap.oriented).toEqual(Array(4).fill(true));
-    expect(D2.attachingMap.targets).toEqual(D2.cells1);
+    const D2 = D.glue0in2([D.cells0[0]], v1);
+    checkSquareLabels(D2, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'D-v1', 'D-v2', 'D-v3']);
 
 
-    expect(D.cells1[0].toString()).toBe('D-e0: D-v0 ---> D-v1');
-    expect(D.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
-    expect(D.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
-    expect(D.cells1[3].toString()).toBe('D-e3: D-v3 ---> D-v0');
-    expect(D.cells0[0].toString()).toBe('D-v0');
-    expect(D.cells0[1].toString()).toBe('D-v1');
-    expect(D.cells0[2].toString()).toBe('D-v2');
-    expect(D.cells0[3].toString()).toBe('D-v3');
-    expect(D.cells1[0].start.toString()).toBe('D-v0');
-    expect(D.cells1[1].start.toString()).toBe('D-v1');
-    expect(D.cells1[2].start.toString()).toBe('D-v2');
-    expect(D.cells1[3].start.toString()).toBe('D-v3');
-    expect(D.cells1[0].end.toString()).toBe('D-v1');
-    expect(D.cells1[1].end.toString()).toBe('D-v2');
-    expect(D.cells1[2].end.toString()).toBe('D-v3');
-    expect(D.cells1[3].end.toString()).toBe('D-v0');
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
 
-    const D3 = D2.glue0([D2.cells0[1], D.cells0[2],
+    const D3 = D2.glue0in2([D2.cells0[1], D.cells0[2],
       D2.attachingMap.targets[0].end], v2);
+
+
+    checkSquareLabels(D2, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'D-v1', 'D-v2', 'D-v3']);
+
+
+    checkSquareLabels(D3, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'b', 'b', 'D-v3']);
+
+    const D4 = D3.glue0in2(D3.cells0, v1);
+
+
+    checkSquareLabels(D4, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'a', 'a', 'a']);
+
+
+    checkSquareLabels(D3, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'b', 'b', 'D-v3']);
+
+
+    checkSquareLabels(D2, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'D-v1', 'D-v2', 'D-v3']);
   });
 });
 
@@ -155,26 +178,11 @@ describe('2-cells ', () =>{
     expect(edges[3].toString()).toBe('T-e3: T-v3 ---> T-v0');
 
     const disk = Cell2.disk(4, 'D');
-    expect(disk.cells1[0].toString()).toBe('D-e0: D-v0 ---> D-v1');
-    expect(disk.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
-    expect(disk.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
-    expect(disk.cells1[3].toString()).toBe('D-e3: D-v3 ---> D-v0');
-    expect(disk.cells0[0].toString()).toBe('D-v0');
-    expect(disk.cells0[1].toString()).toBe('D-v1');
-    expect(disk.cells0[2].toString()).toBe('D-v2');
-    expect(disk.cells0[3].toString()).toBe('D-v3');
-    expect(disk.cells1[0].start.toString()).toBe('D-v0');
-    expect(disk.cells1[1].start.toString()).toBe('D-v1');
-    expect(disk.cells1[2].start.toString()).toBe('D-v2');
-    expect(disk.cells1[3].start.toString()).toBe('D-v3');
-    expect(disk.cells1[0].end.toString()).toBe('D-v1');
-    expect(disk.cells1[1].end.toString()).toBe('D-v2');
-    expect(disk.cells1[2].end.toString()).toBe('D-v3');
-    expect(disk.cells1[3].end.toString()).toBe('D-v0');
-    expect(disk.attachingMap.dim).toBe(2);
-    expect(disk.attachingMap.isValid()[0]).toBe(true);
-    expect(disk.attachingMap.oriented).toEqual(Array(4).fill(true));
-    expect(disk.attachingMap.targets).toEqual(disk.cells1);
+
+
+    checkSquareLabels(disk, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
   });
 
 

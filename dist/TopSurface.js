@@ -89,16 +89,6 @@ class Cell {
         });
         return answer;
     }
-    /**
-     * You should never call this function,
-     * since each type of cell has its own method
-     * @param glued you should never call this
-     * @param newCell you should never call this
-     * @return void
-     */
-    glue0(glued, newCell) {
-        throw new Error('Glueing dimensionless cell');
-    }
 }
 exports.Cell = Cell;
 /**
@@ -114,7 +104,7 @@ class Cell2 extends Cell {
      */
     constructor(name, attachingMap, cells1, cells0) {
         super(name, attachingMap);
-        this.attachingMap;
+        this.attachingMap = attachingMap;
         this.cells1 = cells1;
         this.cells0 = cells0;
     }
@@ -165,16 +155,43 @@ class Cell2 extends Cell {
      * @param newCell the new cell created from combining these two
      * @returns a new cell with fewer subcells
      */
-    glue0(glued, newCell) {
+    glue0in2(glued, newCell) {
         const output = this.copy();
         // Change its vertices to the new cell if needbe
-        output.cells0 = output.cells0.map((v) => v.glue0(glued, newCell));
+        output.cells0 = output.cells0.map((v) => v.glue0in0(glued, newCell));
         output.cells0 = Cell.removeDuplicates(output.cells0);
         // Change its edges to the new cell (this includes the attaching maps)
-        output.cells1 = output.cells1.map((e) => e.glue0(glued, newCell));
+        output.cells1 = output.cells1.map((e) => e.glue0in1(glued, newCell));
         output.cells1 = Cell.removeDuplicates(output.cells1);
         // Change the vertices of the edges appearing in the attaching map
-        output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue0(glued, newCell));
+        output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue0in1(glued, newCell));
+        return output;
+    }
+    /**
+     * TODO
+     * This requires I think recursion
+     * to induct in both the dimension of the glue cell and of this
+     * Glues subcells together into a new cell
+     * @param glued the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue1in2(glued, newCell) {
+        let output = this.copy();
+        let gluedstarts = [];
+        let gluedends = [];
+        glued.forEach((e) => gluedstarts.push(e.start));
+        glued.forEach((e) => gluedends.push(e.end));
+        gluedstarts = Cell.removeDuplicates(gluedstarts);
+        gluedends = Cell.removeDuplicates(gluedends);
+        output = output.glue0in2(gluedstarts, newCell.start);
+        output = output.glue0in2(gluedends, newCell.end);
+        // Change its edges to the new cell (this includes the attaching maps)
+        output.cells1 = output.cells1.map((e) => e.glue1in1(glued, newCell));
+        output.cells1 = Cell.removeDuplicates(output.cells1);
+        // Change the vertices of the edges appearing in the attaching map
+        output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue1in1(glued, newCell));
         return output;
     }
     /**
@@ -199,7 +216,7 @@ class Cell1 extends Cell {
      */
     constructor(name, cells0, attachingMap) {
         super(name, attachingMap);
-        this.attachingMap;
+        this.attachingMap = attachingMap;
         this.cells0 = cells0;
         if (!this.validate()) {
             const message = 'Invalid edge definition\n' +
@@ -309,7 +326,7 @@ class Cell1 extends Cell {
      * @param newCell the new cell created from combining these two
      * @returns a new cell with fewer subcells
      */
-    glue0(glued, newCell) {
+    glue0in1(glued, newCell) {
         // console.log('\x1b[36m%s\x1b[0m', `Glueing ${c.toString()}`);
         const output = this.copy();
         // Change its vertices to the new cell if needbe
@@ -317,7 +334,7 @@ class Cell1 extends Cell {
             /* console.log(`The vertex is ${v.toString()}`);
               console.log(`The new vertex is
               ${v.glue0(glued, newCell).toString()}`); */
-            return v.glue0(glued, newCell);
+            return v.glue0in0(glued, newCell);
         });
         /* output.cells0.forEach((v) =>
             console.log(`We have indeed changed it to ${v.toString()}`)); */
@@ -325,8 +342,22 @@ class Cell1 extends Cell {
         // Do not remove duplicates for the attaching map!
         // The start and end can repeat
         output.attachingMap.targets = output.attachingMap
-            .targets.map((v) => v.glue0(glued, newCell));
+            .targets.map((v) => v.glue0in0(glued, newCell));
         return output;
+    }
+    /**
+     * Glues subcells together into a new cell. Doesn't alter the original
+     * @param glued the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue1in1(glued, newCell) {
+        // If this is the edge, just replace it
+        if (this.inList(glued)) {
+            return newCell;
+        }
+        return this;
     }
 }
 exports.Cell1 = Cell1;
@@ -360,16 +391,13 @@ class Cell0 extends Cell {
         return v;
     }
     /**
-     * TODO
-     * This requires I think recursion
-     * to induct in both the dimension of the glue cell and of this
-     * Glues subcells together into a new cell
+     * Glues subcells together into a new cell. Doesn't alter the original
      * @param glued the labels of the subcells that will be glued together
      * expected to be all the same dimension
      * @param newCell the new cell created from combining these two
      * @returns a new cell with fewer subcells
      */
-    glue0(glued, newCell) {
+    glue0in0(glued, newCell) {
         // If c is the vertex, just replace it
         if (this.inList(glued)) {
             return newCell;
@@ -380,9 +408,9 @@ class Cell0 extends Cell {
 exports.Cell0 = Cell0;
 /**
  * Attaching maps
- * @property {Cell} source - of the map
- * @property {Cell} target - of the map
- * @property {boolean} oriented - is the map orientation compatible,
+ * @property {number} dim - of the map
+ * @property {FaceType[]} target - of the map
+ * @property {boolean[]} oriented - is the map orientation compatible,
  * i.e. does the 1-cell go counterclockwise around the 2-cell? (for 1->0
  * cells this is just true always
  */
