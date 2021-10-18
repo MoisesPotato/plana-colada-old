@@ -188,7 +188,7 @@ module.exports = {
   verbose: true,
 
   // An array of regexp patterns that are matched against all source file paths before re-running tests in watch mode
-  // watchPathIgnorePatterns: [],
+  watchPathIgnorePatterns: ['./dist/Cx.test.js'],
 
   // Whether to use watchman for file crawling
   // watchman: true,
