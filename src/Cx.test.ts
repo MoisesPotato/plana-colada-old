@@ -1,4 +1,5 @@
-import {Cx} from '../src/Cx';
+import {Cx} from './Cx';
+
 
 describe('Cx', () => {
   const one = new Cx(1, 0);

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Cx_1 = require("../src/Cx");
+const Cx_1 = require("./Cx");
 describe('Cx', () => {
     const one = new Cx_1.Cx(1, 0);
     const i = new Cx_1.Cx(0, 1);
