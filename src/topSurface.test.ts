@@ -1,7 +1,6 @@
+
 // eslint-disable-next-line no-unused-vars
-
 import {Attach, Cell, Cell0, Cell1, Cell2} from './TopSurface';
-
 
 describe(('0 cells '), () => {
   it('have names', ()=> {
@@ -40,17 +39,17 @@ describe('Cells ', () =>{
   });
 
   it('glues 0-cells in 0-cells', ()=>{
-    expect(Cell.glue0(v1, [v1], v2)).toEqual(v2);
-    expect(Cell.glue0(v1, [v2], v1)).toEqual(v1);
-    expect(Cell.glue0(v1, [v2], v2)).toEqual(v1);
-    expect(Cell.glue0(v1, [v1, v2], v2)).toEqual(v2);
-    expect(Cell.glue0(v1, [], v2)).toEqual(v1);
+    expect(v1.glue0( [v1], v2)).toEqual(v2);
+    expect(v1.glue0( [v2], v1)).toEqual(v1);
+    expect(v1.glue0( [v2], v2)).toEqual(v1);
+    expect(v1.glue0( [v1, v2], v2)).toEqual(v2);
+    expect(v1.glue0( [], v2)).toEqual(v1);
   } );
 
   it('glues 0-cells in 1-cells', () => {
     console.log(`e1: ${e1.toString()}`);
 
-    const e3 = Cell.glue0(e1, [], v1);
+    const e3 = e1.glue0( [], v1);
 
     // console.log('Made e3');
     // console.log(`e1: ${e1.toString()}`);
@@ -58,7 +57,7 @@ describe('Cells ', () =>{
     expect(e3).toEqual(e1);
     expect(e1.start.toString()).toEqual('e1-start');
 
-    const e4 = Cell.glue0(e1, [e1.start, e1.end], e1.start);
+    const e4 = e1.glue0( [e1.start, e1.end], e1.start);
     expect(e4.cells0);
     expect(e4.start).toEqual(e1.start);
     expect(e4.cells0).toEqual([e1.start]);
@@ -70,11 +69,11 @@ describe('Cells ', () =>{
 
     // console.log('Made e4');
     // console.log(`e1: ${e1.toString()}`);
-    let e5= Cell.glue0(e1, [e1.end], v2);
+    let e5= e1.glue0( [e1.end], v2);
     expect(e5.start).toEqual(e1.start);
     expect(e5.end).toEqual(v2);
     // console.log(`e5: ${e5.toString()}`);
-    e5= Cell.glue0(e5, [e1.start], v1);
+    e5= e5.glue0( [e1.start], v1);
     // console.log(`e5: ${e5.toString()}`);
     expect(e5.start).toEqual(v1);
     expect(e5.end).toEqual(v2);
@@ -96,15 +95,40 @@ describe(('1 cells '), () => {
 });
 
 describe('2-cells ', () =>{
-  it(' can be created', ()=> {
-    const edges = Cell1.createCircle(4, 'T');
+  it(' can be created with no identifications', ()=> {
+    const edges = Cell1.circle(4, 'T');
     expect(edges[0].toString()).toBe('T-e0: T-v0 ---> T-v1');
     expect(edges[1].toString()).toBe('T-e1: T-v1 ---> T-v2');
     expect(edges[2].toString()).toBe('T-e2: T-v2 ---> T-v3');
     expect(edges[3].toString()).toBe('T-e3: T-v3 ---> T-v0');
-    const maps = Attach.fromLabels(edges,
+
+    const disk = Cell2.disk(4, 'D');
+    expect(disk.cells1[0].toString()).toBe('D-e0: D-v0 ---> D-v1');
+    expect(disk.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
+    expect(disk.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
+    expect(disk.cells1[3].toString()).toBe('D-e3: D-v3 ---> D-v0');
+    expect(disk.cells0[0].toString()).toBe('D-v0');
+    expect(disk.cells0[1].toString()).toBe('D-v1');
+    expect(disk.cells0[2].toString()).toBe('D-v2');
+    expect(disk.cells0[3].toString()).toBe('D-v3');
+    expect(disk.cells1[0].start.toString()).toBe('D-v0');
+    expect(disk.cells1[1].start.toString()).toBe('D-v1');
+    expect(disk.cells1[2].start.toString()).toBe('D-v2');
+    expect(disk.cells1[3].start.toString()).toBe('D-v3');
+    expect(disk.cells1[0].end.toString()).toBe('D-v1');
+    expect(disk.cells1[1].end.toString()).toBe('D-v2');
+    expect(disk.cells1[2].end.toString()).toBe('D-v3');
+    expect(disk.cells1[3].end.toString()).toBe('D-v0');
+    expect(disk.attachingMap.dim).toBe(2);
+    expect(disk.attachingMap.isValid()[0]).toBe(true);
+    expect(disk.attachingMap.oriented).toEqual(Array(4).fill(true));
+    expect(disk.attachingMap.targets).toEqual(disk.cells1);
+  });
+
+
+  it(' can have identified edges', ()=> {
+    const f = Cell2.fromLabels(4,
         [[1, 3, true], [2, 4, true]]);
-    const f = Cell2.fromGlue('Torus', edges, maps);
     expect(f.cells0.length).toBe(1);
     expect(f.cells1.length).toBe(2);
   });

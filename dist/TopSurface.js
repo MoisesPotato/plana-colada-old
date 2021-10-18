@@ -89,56 +89,6 @@ class Cell {
         });
         return answer;
     }
-    /**
-     * TODO
-     * This requires I think recursion
-     * to induct in both the dimension of the glue cell and of this
-     * Glues subcells together into a new cell
-     * @param c the cell to be glued
-     * @param glued the labels of the subcells that will be glued together
-     * expected to be all the same dimension
-     * @param newCell the new cell created from combining these two
-     * @returns a new cell with fewer subcells
-     */
-    static glue0(c, glued, newCell) {
-        if (c instanceof Cell0) {
-            // If c is the vertex, just replace it
-            if (c.inList(glued)) {
-                return newCell;
-            }
-            return c;
-        }
-        if (c instanceof Cell1) {
-            // console.log('\x1b[36m%s\x1b[0m', `Glueing ${c.toString()}`);
-            const output = c.copy();
-            // Change its vertices to the new cell if needbe
-            output.cells0 = output.cells0.map((v) => {
-                /* console.log(`The vertex is ${v.toString()}`);
-                console.log(`The new vertex is
-                ${Cell.glue0(v, glued, newCell).toString()}`); */
-                return Cell.glue0(v, glued, newCell);
-            });
-            /* output.cells0.forEach((v) =>
-              console.log(`We have indeed changed it to ${v.toString()}`)); */
-            output.cells0 = Cell.removeDuplicates(output.cells0);
-            // Do not remove duplicates for the attaching map!
-            // The start and end can repeat
-            output.attachingMap.targets = output.attachingMap
-                .targets.map((v) => Cell.glue0(v, glued, newCell));
-            return output;
-        }
-        if (c instanceof Cell2) {
-            // Change its vertices to the new cell if needbe
-            c.cells0 = c.cells0.map((v) => Cell.glue0(v, glued, newCell));
-            c.cells0 = Cell.removeDuplicates(c.cells0);
-            // Change its edges to the new cell
-            c.cells1 = c.cells1.map((e) => Cell.glue0(e, glued, newCell));
-            c.cells1 = Cell.removeDuplicates(c.cells1);
-            // Change the vertices of the edges appearing in the attaching map
-            c.attachingMap.targets = c.attachingMap.targets.map((c) => Cell.glue0(c, glued, newCell));
-        }
-        throw new Error('Cell without dimension');
-    }
 }
 exports.Cell = Cell;
 /**
@@ -169,6 +119,61 @@ class Cell2 extends Cell {
         const cells1 = edges;
         const cells0 = [];
         return new Cell2(name, attachingMap, cells1, cells0);
+    }
+    /**
+     * Makes a disk with n edges
+     * @param n number of edges
+     * @param name label
+     * @returns the cell
+     */
+    static disk(n, name = '') {
+        const edges = Cell1.circle(n, name);
+        const vertices = edges.map((e) => e.start);
+        const attachingMap = new Attach(2, edges);
+        return new Cell2(name, attachingMap, edges, vertices);
+    }
+    /**
+     *TODO
+     * @param n number of edges
+     * @param labels array of {@link glueLabel}
+     * @param name label (optional)
+     * telling us how to glue
+     * @returns An attaching map
+     */
+    static fromLabels(n, labels, name = '') {
+        const C = Cell2.disk(n, name);
+        return C;
+    }
+    /**
+     * TODO
+     * This requires I think recursion
+     * to induct in both the dimension of the glue cell and of this
+     * Glues subcells together into a new cell
+     * @param glued the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue0(glued, newCell) {
+        const output = this.copy();
+        // Change its vertices to the new cell if needbe
+        output.cells0 = output.cells0.map((v) => v.glue0(glued, newCell));
+        output.cells0 = Cell.removeDuplicates(output.cells0);
+        // Change its edges to the new cell (this includes the attaching maps)
+        output.cells1 = output.cells1.map((e) => e.glue0(glued, newCell));
+        output.cells1 = Cell.removeDuplicates(output.cells1);
+        // Change the vertices of the edges appearing in the attaching map
+        output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue0(glued, newCell));
+        return output;
+    }
+    /**
+     *
+     * @returns an identical copy, NOT RECURSIVE! edges are THE SAME
+     */
+    copy() {
+        const [...mapTargets] = this.attachingMap.targets;
+        const [...mapOriented] = this.attachingMap.oriented;
+        return new Cell2(this.name, new Attach(2, mapTargets, mapOriented), [...this.cells1], [...this.cells0]);
     }
 }
 exports.Cell2 = Cell2;
@@ -231,21 +236,29 @@ class Cell1 extends Cell {
    * @returns the starting vertex
    */
     get start() {
-        return this.attachingMap.targets[0];
+        const v = this.attachingMap.targets[0];
+        if (v instanceof Cell0) {
+            return v;
+        }
+        throw new Error('The vertex is not a 0-cell');
     }
     /**
    *
    * @returns the ending vertex
    */
     get end() {
-        return this.attachingMap.targets[1];
+        const v = this.attachingMap.targets[1];
+        if (v instanceof Cell0) {
+            return v;
+        }
+        throw new Error('The vertex is not a 0-cell');
     }
     /**
    * @param n number of edges
    * @param labelPrefix words to attach to every cell label
    * @returns an array of 1-cells joined in a circle
    */
-    static createCircle(n, labelPrefix) {
+    static circle(n, labelPrefix) {
         labelPrefix = labelPrefix || '';
         const keys = [...Array(n).keys()];
         const edgeLabels = keys.map((i) => labelPrefix + '-e' + i);
@@ -274,6 +287,35 @@ class Cell1 extends Cell {
         const [...targets] = this.attachingMap.targets;
         const A = new Attach(1, targets);
         return new Cell1(this.name, [...this.cells0], A);
+    }
+    /**
+     * TODO
+     * This requires I think recursion
+     * to induct in both the dimension of the glue cell and of this
+     * Glues subcells together into a new cell
+     * @param glued the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue0(glued, newCell) {
+        // console.log('\x1b[36m%s\x1b[0m', `Glueing ${c.toString()}`);
+        const output = this.copy();
+        // Change its vertices to the new cell if needbe
+        output.cells0 = output.cells0.map((v) => {
+            /* console.log(`The vertex is ${v.toString()}`);
+              console.log(`The new vertex is
+              ${v.glue0(glued, newCell).toString()}`); */
+            return v.glue0(glued, newCell);
+        });
+        /* output.cells0.forEach((v) =>
+            console.log(`We have indeed changed it to ${v.toString()}`)); */
+        output.cells0 = Cell.removeDuplicates(output.cells0);
+        // Do not remove duplicates for the attaching map!
+        // The start and end can repeat
+        output.attachingMap.targets = output.attachingMap
+            .targets.map((v) => v.glue0(glued, newCell));
+        return output;
     }
 }
 exports.Cell1 = Cell1;
@@ -306,6 +348,23 @@ class Cell0 extends Cell {
         }
         return v;
     }
+    /**
+     * TODO
+     * This requires I think recursion
+     * to induct in both the dimension of the glue cell and of this
+     * Glues subcells together into a new cell
+     * @param glued the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue0(glued, newCell) {
+        // If c is the vertex, just replace it
+        if (this.inList(glued)) {
+            return newCell;
+        }
+        return this;
+    }
 }
 exports.Cell0 = Cell0;
 /**
@@ -335,16 +394,6 @@ class Attach {
         this.dim = dim;
         this.targets = targets;
         this.oriented = oriented;
-    }
-    /**
-     *TODO
-     * @param edges array of 1-cells
-     * @param labels array of {@link glueLabel}
-     * telling us how to glue
-     * @returns An attaching map
-     */
-    static fromLabels(edges, labels) {
-        return new Attach(0, []);
     }
     /**
    * Checks to see if the definitions are sensical.
@@ -390,6 +439,7 @@ class Attach {
             if (this.targets.length !== this.oriented.length) {
                 return [false, 'Wrong length of oriented'];
             }
+            return [true, ''];
         }
         return [false, 'No dimension'];
     }
