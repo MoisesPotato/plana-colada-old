@@ -100,17 +100,6 @@ export class Cell {
     });
     return answer;
   }
-
-  /**
-   * You should never call this function,
-   * since each type of cell has its own method
-   * @param glued you should never call this
-   * @param newCell you should never call this
-   * @return void
-   */
-  glue0(glued:typeof this[], newCell:typeof this):typeof this {
-    throw new Error('Glueing dimensionless cell');
-  }
 }
 
 
@@ -121,6 +110,7 @@ export class Cell {
 export class Cell2 extends Cell {
   cells1:Cell1[];
   cells0:Cell0[];
+  attachingMap: Attach<Cell1>;
 
   /**
    *@param name label
@@ -129,11 +119,11 @@ export class Cell2 extends Cell {
    * @param cells0 - set of 0-cells
    */
   constructor(name: string,
-      attachingMap: Attach,
+      attachingMap: Attach<Cell1>,
       cells1: Cell1[],
       cells0: Cell0[]) {
     super(name, attachingMap);
-    this.attachingMap as Attach;
+    this.attachingMap = attachingMap;
     this.cells1 = cells1;
     this.cells0 = cells0;
   }
@@ -190,17 +180,48 @@ export class Cell2 extends Cell {
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:Cell0[], newCell:Cell0):typeof this {
+  glue0in2(glued:Cell0[], newCell:Cell0):typeof this {
     const output = this.copy() as typeof this;
     // Change its vertices to the new cell if needbe
-    output.cells0 = output.cells0.map((v) => v.glue0( glued, newCell));
+    output.cells0 = output.cells0.map((v) => v.glue0in0( glued, newCell));
     output.cells0 = Cell.removeDuplicates(output.cells0);
     // Change its edges to the new cell (this includes the attaching maps)
-    output.cells1 = output.cells1.map((e) => e.glue0( glued, newCell));
+    output.cells1 = output.cells1.map((e) => e.glue0in1( glued, newCell));
     output.cells1 = Cell.removeDuplicates(output.cells1);
     // Change the vertices of the edges appearing in the attaching map
     output.attachingMap.targets = output.attachingMap.targets.map(
-        (e) => e.glue0( glued, newCell),
+        (e) => e.glue0in1( glued, newCell),
+    );
+
+    return output;
+  }
+
+  /**
+   * TODO
+   * This requires I think recursion
+   * to induct in both the dimension of the glue cell and of this
+   * Glues subcells together into a new cell
+   * @param glued the labels of the subcells that will be glued together
+   * expected to be all the same dimension
+   * @param newCell the new cell created from combining these two
+   * @returns a new cell with fewer subcells
+   */
+  glue1in2(glued:Cell1[], newCell:Cell1):typeof this {
+    let output = this.copy() as typeof this;
+    let gluedstarts = [] as Cell0[];
+    let gluedends = [] as Cell0[];
+    glued.forEach((e) => gluedstarts.push(e.start));
+    glued.forEach((e) => gluedends.push(e.end));
+    gluedstarts = Cell.removeDuplicates(gluedstarts);
+    gluedends = Cell.removeDuplicates(gluedends);
+    output = output.glue0in2(gluedstarts, newCell.start);
+    output = output.glue0in2(gluedends, newCell.end);
+    // Change its edges to the new cell (this includes the attaching maps)
+    output.cells1 = output.cells1.map((e) => e.glue1in1( glued, newCell));
+    output.cells1 = Cell.removeDuplicates(output.cells1);
+    // Change the vertices of the edges appearing in the attaching map
+    output.attachingMap.targets = output.attachingMap.targets.map(
+        (e) => e.glue1in1( glued, newCell),
     );
 
     return output;
@@ -224,15 +245,16 @@ export class Cell2 extends Cell {
  */
 export class Cell1 extends Cell {
   cells0:Cell0[];
+  attachingMap:Attach<Cell0>;
 
   /**
    * @param name label
    * @param cells0 start end
    * @param attachingMap the maps
    */
-  constructor(name:string, cells0: Cell0[], attachingMap:Attach) {
+  constructor(name:string, cells0: Cell0[], attachingMap:Attach<Cell0>) {
     super(name, attachingMap);
-    this.attachingMap as Attach;
+    this.attachingMap = attachingMap;
     this.cells0 = cells0;
     if (!this.validate()) {
       const message = 'Invalid edge definition\n'+
@@ -351,7 +373,7 @@ export class Cell1 extends Cell {
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:Cell0[], newCell:Cell0):typeof this {
+  glue0in1(glued:Cell0[], newCell:Cell0):typeof this {
     // console.log('\x1b[36m%s\x1b[0m', `Glueing ${c.toString()}`);
     const output = this.copy();
     // Change its vertices to the new cell if needbe
@@ -359,7 +381,7 @@ export class Cell1 extends Cell {
       /* console.log(`The vertex is ${v.toString()}`);
         console.log(`The new vertex is
         ${v.glue0(glued, newCell).toString()}`); */
-      return v.glue0(glued, newCell);
+      return v.glue0in0(glued, newCell);
     });
     /* output.cells0.forEach((v) =>
         console.log(`We have indeed changed it to ${v.toString()}`)); */
@@ -367,10 +389,26 @@ export class Cell1 extends Cell {
     // Do not remove duplicates for the attaching map!
     // The start and end can repeat
     output.attachingMap.targets = output.attachingMap
-        .targets.map((v) => v.glue0(glued, newCell));
+        .targets.map((v) => v.glue0in0(glued, newCell));
     return output;
   }
+
+  /**
+   * Glues subcells together into a new cell. Doesn't alter the original
+   * @param glued the labels of the subcells that will be glued together
+   * expected to be all the same dimension
+   * @param newCell the new cell created from combining these two
+   * @returns a new cell with fewer subcells
+   */
+  glue1in1(glued:typeof this[], newCell:typeof this):typeof this {
+    // If this is the edge, just replace it
+    if (this.inList(glued)) {
+      return newCell;
+    }
+    return this;
+  }
 }
+
 
 /**
  * @property {string} name
@@ -404,16 +442,13 @@ export class Cell0 extends Cell {
   }
 
   /**
-   * TODO
-   * This requires I think recursion
-   * to induct in both the dimension of the glue cell and of this
-   * Glues subcells together into a new cell
+   * Glues subcells together into a new cell. Doesn't alter the original
    * @param glued the labels of the subcells that will be glued together
    * expected to be all the same dimension
    * @param newCell the new cell created from combining these two
    * @returns a new cell with fewer subcells
    */
-  glue0(glued:typeof this[], newCell:typeof this):typeof this {
+  glue0in0(glued:typeof this[], newCell:typeof this):typeof this {
     // If c is the vertex, just replace it
     if (this.inList(glued)) {
       return newCell;
@@ -423,15 +458,15 @@ export class Cell0 extends Cell {
 }
 /**
  * Attaching maps
- * @property {Cell} source - of the map
- * @property {Cell} target - of the map
- * @property {boolean} oriented - is the map orientation compatible,
+ * @property {number} dim - of the map
+ * @property {FaceType[]} target - of the map
+ * @property {boolean[]} oriented - is the map orientation compatible,
  * i.e. does the 1-cell go counterclockwise around the 2-cell? (for 1->0
  * cells this is just true always
  */
-export class Attach {
+export class Attach<FaceType extends Cell = Cell1|Cell0> {
   dim: number;
-  targets: Cell[];
+  targets: FaceType[];
   oriented: boolean[];
 
   /**
@@ -448,7 +483,7 @@ export class Attach {
    * @param oriented preserves orientation
    */
   constructor(dim: number,
-      targets: Cell[],
+      targets: FaceType[],
       oriented?: boolean[]) {
     oriented = oriented || targets.map((x) => true);
     this.dim = dim;
@@ -516,3 +551,4 @@ export class Attach {
  * @typedef {[number, number, string]} glueLabel
  */
 type glueLabel = [number, number, boolean]
+
