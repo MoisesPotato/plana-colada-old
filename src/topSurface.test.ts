@@ -37,8 +37,14 @@ describe('Cells ', () =>{
     expect(list2.length).toBe(2);
     expect(list2).toEqual([e1, e2]);
   });
-
-  it('glues 0-cells in 0-cells', ()=>{
+});
+describe('Cell can be glued', () => {
+  const v1 = new Cell0('a');
+  const v2 = new Cell0('b');
+  const e1 = Cell1.v1v2('e1');
+  const e2 = Cell1.v1v2('e2', 'a', 'a');
+  const D = Cell2.disk(4, 'D');
+  it('0-cells in 0-cells', ()=>{
     expect(v1.glue0( [v1], v2)).toEqual(v2);
     expect(v1.glue0( [v2], v1)).toEqual(v1);
     expect(v1.glue0( [v2], v2)).toEqual(v1);
@@ -46,7 +52,7 @@ describe('Cells ', () =>{
     expect(v1.glue0( [], v2)).toEqual(v1);
   } );
 
-  it('glues 0-cells in 1-cells', () => {
+  it('0-cells in 1-cells', () => {
     console.log(`e1: ${e1.toString()}`);
 
     const e3 = e1.glue0( [], v1);
@@ -80,6 +86,52 @@ describe('Cells ', () =>{
 
 
     expect(e1.toString()).toEqual('e1: e1-start ---> e1-end');
+  });
+
+  it('0-cells in 2-cells', () => {
+    const D2 = D.glue0([D.cells0[0]], v1);
+
+    expect(D2.cells1[0].toString()).toBe('D-e0: a ---> D-v1');
+    expect(D2.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
+    expect(D2.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
+    expect(D2.cells1[3].toString()).toBe('D-e3: D-v3 ---> a');
+    expect(D2.cells0[0].toString()).toBe('a');
+    expect(D2.cells0[1].toString()).toBe('D-v1');
+    expect(D2.cells0[2].toString()).toBe('D-v2');
+    expect(D2.cells0[3].toString()).toBe('D-v3');
+    expect(D2.cells1[0].start.toString()).toBe('a');
+    expect(D2.cells1[1].start.toString()).toBe('D-v1');
+    expect(D2.cells1[2].start.toString()).toBe('D-v2');
+    expect(D2.cells1[3].start.toString()).toBe('D-v3');
+    expect(D2.cells1[0].end.toString()).toBe('D-v1');
+    expect(D2.cells1[1].end.toString()).toBe('D-v2');
+    expect(D2.cells1[2].end.toString()).toBe('D-v3');
+    expect(D2.cells1[3].end.toString()).toBe('a');
+    expect(D2.attachingMap.dim).toBe(2);
+    expect(D2.attachingMap.isValid()[0]).toBe(true);
+    expect(D2.attachingMap.oriented).toEqual(Array(4).fill(true));
+    expect(D2.attachingMap.targets).toEqual(D2.cells1);
+
+
+    expect(D.cells1[0].toString()).toBe('D-e0: D-v0 ---> D-v1');
+    expect(D.cells1[1].toString()).toBe('D-e1: D-v1 ---> D-v2');
+    expect(D.cells1[2].toString()).toBe('D-e2: D-v2 ---> D-v3');
+    expect(D.cells1[3].toString()).toBe('D-e3: D-v3 ---> D-v0');
+    expect(D.cells0[0].toString()).toBe('D-v0');
+    expect(D.cells0[1].toString()).toBe('D-v1');
+    expect(D.cells0[2].toString()).toBe('D-v2');
+    expect(D.cells0[3].toString()).toBe('D-v3');
+    expect(D.cells1[0].start.toString()).toBe('D-v0');
+    expect(D.cells1[1].start.toString()).toBe('D-v1');
+    expect(D.cells1[2].start.toString()).toBe('D-v2');
+    expect(D.cells1[3].start.toString()).toBe('D-v3');
+    expect(D.cells1[0].end.toString()).toBe('D-v1');
+    expect(D.cells1[1].end.toString()).toBe('D-v2');
+    expect(D.cells1[2].end.toString()).toBe('D-v3');
+    expect(D.cells1[3].end.toString()).toBe('D-v0');
+
+    const D3 = D2.glue0([D2.cells0[1], D.cells0[2],
+      D2.attachingMap.targets[0].end], v2);
   });
 });
 
