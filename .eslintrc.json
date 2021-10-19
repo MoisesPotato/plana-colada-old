@@ -18,5 +18,5 @@
         "valid-jsdoc": ["error", {"requireParamType": false,
             "requireReturnType": false}],
         "require-jsdoc":"warn"
-    }
+        }
 }

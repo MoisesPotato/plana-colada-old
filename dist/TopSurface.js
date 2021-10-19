@@ -70,7 +70,7 @@ class Cell {
         }
         const answer = [list[0]];
         list.forEach((c) => {
-            if (!c.inList(answer)) {
+            if (c.indexOf(answer) < 0) {
                 answer.push(c);
             }
         });
@@ -78,22 +78,61 @@ class Cell {
     }
     /**
      * @param list list of cells
-     * @returns is this cell on that list?
+     * @returns the index of the largest appearance on the list
      */
-    inList(list) {
-        let answer = false;
-        list.forEach((c) => {
+    indexOf(list) {
+        let answer = -1;
+        list.forEach((c, i) => {
             if (this.equals(c)) {
-                answer = true;
+                answer = i;
             }
         });
         return answer;
+    }
+    /**
+     * tells us if two arrays have the same elements.
+     * @param list1 list one
+     * @param list2 list two
+     * @param duplicateFree true if we can assume there are no duplicates
+     * @returns yes or no
+     */
+    static compareSets(list1, list2, duplicateFree = false) {
+        let A = list1;
+        let B = list2;
+        if (!duplicateFree) {
+            A = Cell.removeDuplicates(A);
+            B = Cell.removeDuplicates(B);
+        }
+        if (A.length !== B.length) {
+            return false;
+        }
+        if (A.length == 0) {
+            return (B.length == 0);
+        }
+        const i = A[0].indexOf(B);
+        A = A.slice(1);
+        B.splice(i, 1);
+        return (i > -1) && Cell.compareSets(A, B, true);
+    }
+    /**
+   * Is there a cell in common?
+   * @param list1 one list
+   * @param list2 other list
+   * @returns is there a cell in common?
+   */
+    static listsIntersect(list1, list2) {
+        for (let i = 0; i < list1.length; i++) {
+            if (list1[i].indexOf(list2) >= 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 exports.Cell = Cell;
 /**
  * @property {Cell1[]} cells1
- * @property {Cell2[]} cells2
+ * @property {Cell0[]} cells0
  */
 class Cell2 extends Cell {
     /**
@@ -107,6 +146,42 @@ class Cell2 extends Cell {
         this.attachingMap = attachingMap;
         this.cells1 = cells1;
         this.cells0 = cells0;
+        if (!this.isValid()) {
+            const message = 'Invalid edge definition\n' +
+                'vertices:\n' +
+                cells0.map((v) => v.toString() + '\n').join() +
+                'edges:\n' +
+                cells1.map((e) => e.toString() + '\n').join() +
+                'attachingMap:\n' +
+                attachingMap.toString();
+            throw new Error(message);
+        }
+    }
+    /** TODO
+     * @returns is this a valid 2-cell and the reason why not
+     */
+    isValid() {
+        if (this.attachingMap.dim !== 2) {
+            return [false, 'Wrong attaching map dimension'];
+        }
+        this.attachingMap.targets.forEach((t) => {
+            if (t.indexOf(this.cells1) < 0) {
+                return [false, 'Attaching map targets are not in cell list'];
+            }
+        });
+        this.attachingMap.targets.forEach((t) => {
+            if (t.start().indexOf(this.cells0) < 0) {
+                return [false, 'Attaching map target vertices are not in cell list'];
+            }
+            if (t.end().indexOf(this.cells0) < 0) {
+                return [false, 'Attaching map target vertices are not in cell list'];
+            }
+        });
+        const [validAttachingMap, message] = this.attachingMap.isValid();
+        if (!validAttachingMap) {
+            return [false, 'Invalid attaching map:\n' + message];
+        }
+        return [true, ''];
     }
     /**
      *
@@ -129,7 +204,7 @@ class Cell2 extends Cell {
      */
     static disk(n, name = '') {
         const edges = Cell1.circle(n, name);
-        const vertices = edges.map((e) => e.start);
+        const vertices = edges.map((e) => e.start());
         const attachingMap = new Attach(2, edges);
         return new Cell2(name, attachingMap, edges, vertices);
     }
@@ -153,9 +228,10 @@ class Cell2 extends Cell {
      * @param glued the labels of the subcells that will be glued together
      * expected to be all the same dimension
      * @param newCell the new cell created from combining these two
+     * @param newName optionally, a new name
      * @returns a new cell with fewer subcells
      */
-    glue0in2(glued, newCell) {
+    glue0in2(glued, newCell, newName = this.name) {
         const output = this.copy();
         // Change its vertices to the new cell if needbe
         output.cells0 = output.cells0.map((v) => v.glue0in0(glued, newCell));
@@ -165,33 +241,54 @@ class Cell2 extends Cell {
         output.cells1 = Cell.removeDuplicates(output.cells1);
         // Change the vertices of the edges appearing in the attaching map
         output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue0in1(glued, newCell));
+        if (!output.isValid()[0]) {
+            throw new Error('Glueing went wrong:\n' +
+                output.isValid()[1]);
+        }
+        output.name = newName;
         return output;
     }
     /**
      * TODO
+     * DOES NOT TAKE ORIENTATION INTO ACCOUNT
      * This requires I think recursion
      * to induct in both the dimension of the glue cell and of this
      * Glues subcells together into a new cell
      * @param glued the labels of the subcells that will be glued together
      * expected to be all the same dimension
      * @param newCell the new cell created from combining these two
+     * @param newName new name, optional
      * @returns a new cell with fewer subcells
      */
-    glue1in2(glued, newCell) {
+    glue1in2(glued, newCell, newName = this.name) {
         let output = this.copy();
         let gluedstarts = [];
         let gluedends = [];
-        glued.forEach((e) => gluedstarts.push(e.start));
-        glued.forEach((e) => gluedends.push(e.end));
+        glued.forEach((e) => gluedstarts.push(e.start()));
+        glued.forEach((e) => gluedends.push(e.end()));
         gluedstarts = Cell.removeDuplicates(gluedstarts);
         gluedends = Cell.removeDuplicates(gluedends);
-        output = output.glue0in2(gluedstarts, newCell.start);
-        output = output.glue0in2(gluedends, newCell.end);
+        if (Cell.listsIntersect(gluedstarts, gluedends)) {
+            console.log('They intersect!');
+            newCell = newCell.glue0in1(newCell.cells0, newCell.cells0[0]);
+            gluedstarts = Cell.removeDuplicates(gluedstarts.concat([...gluedends]));
+            console.log(gluedstarts);
+            output = output.glue0in2(gluedstarts, newCell.start());
+        }
+        else {
+            output = output.glue0in2(gluedstarts, newCell.start());
+            output = output.glue0in2(gluedends, newCell.end());
+        }
         // Change its edges to the new cell (this includes the attaching maps)
         output.cells1 = output.cells1.map((e) => e.glue1in1(glued, newCell));
         output.cells1 = Cell.removeDuplicates(output.cells1);
         // Change the vertices of the edges appearing in the attaching map
         output.attachingMap.targets = output.attachingMap.targets.map((e) => e.glue1in1(glued, newCell));
+        if (!output.isValid()[0]) {
+            throw new Error('Glueing went wrong:\n' +
+                output.isValid()[1]);
+        }
+        output.name = newName;
         return output;
     }
     /**
@@ -202,6 +299,22 @@ class Cell2 extends Cell {
         const [...mapTargets] = this.attachingMap.targets;
         const [...mapOriented] = this.attachingMap.oriented;
         return new Cell2(this.name, new Attach(2, mapTargets, mapOriented), [...this.cells1], [...this.cells0]);
+    }
+    /**
+     * @returns pretty string
+     */
+    toString() {
+        let output = this.name + ':';
+        this.attachingMap.targets.forEach((e, i) => {
+            if (this.attachingMap.oriented[i]) {
+                output = output + '\n' + e.toString();
+            }
+            else {
+                const e2 = e.reverse();
+                output = output + '\n' + e2.toString();
+            }
+        });
+        return output;
     }
 }
 exports.Cell2 = Cell2;
@@ -218,7 +331,7 @@ class Cell1 extends Cell {
         super(name, attachingMap);
         this.attachingMap = attachingMap;
         this.cells0 = cells0;
-        if (!this.validate()) {
+        if (!this.isValid()) {
             const message = 'Invalid edge definition\n' +
                 'vertices:\n' +
                 cells0.map((v) => v.toString() + '\n').join() +
@@ -230,7 +343,7 @@ class Cell1 extends Cell {
     /**
      * @returns is this valid and the reason
      */
-    validate() {
+    isValid() {
         if (this.cells0.length > 2) {
             return [false, 'Too many vertices'];
         }
@@ -238,10 +351,13 @@ class Cell1 extends Cell {
             return [false, 'Wrong attaching map dimension'];
         }
         this.attachingMap.targets.forEach((t) => {
-            if (!t.inList(this.cells0)) {
+            if (t.indexOf(this.cells0) < 0) {
                 return [false, 'Attaching map targets are not in cell list'];
             }
         });
+        if (!this.attachingMap.isValid()[0]) {
+            return [false, 'Invalid attaching map:\n' + this.attachingMap.isValid()[1]];
+        }
         return [true, ''];
     }
     /**
@@ -260,25 +376,27 @@ class Cell1 extends Cell {
         return new Cell1(name, [v1, v2], attachingMap);
     }
     /**
-   *
+   * @param theCorrectOne it false, give me the other one
    * @returns the starting vertex
    */
-    get start() {
-        const v = this.attachingMap.targets[0];
-        if (v instanceof Cell0) {
-            return v;
+    start(theCorrectOne = true) {
+        let v = this.attachingMap.targets[0];
+        if (!theCorrectOne) {
+            v = this.attachingMap.targets[1];
         }
+        return v;
         throw new Error('The vertex is not a 0-cell');
     }
     /**
-   *
+   * @param theCorrectOne if false give me the start instead
    * @returns the ending vertex
    */
-    get end() {
-        const v = this.attachingMap.targets[1];
-        if (v instanceof Cell0) {
-            return v;
+    end(theCorrectOne = true) {
+        let v = this.attachingMap.targets[1];
+        if (!theCorrectOne) {
+            v = this.attachingMap.targets[0];
         }
+        return v;
         throw new Error('The vertex is not a 0-cell');
     }
     /**
@@ -303,9 +421,9 @@ class Cell1 extends Cell {
      */
     toString() {
         return this.name + ': ' +
-            this.start.toString() +
+            this.start().toString() +
             ' ---> ' +
-            this.end.toString();
+            this.end().toString();
     }
     /**
      * NOT RECURSIVE COPY!!
@@ -343,6 +461,10 @@ class Cell1 extends Cell {
         // The start and end can repeat
         output.attachingMap.targets = output.attachingMap
             .targets.map((v) => v.glue0in0(glued, newCell));
+        if (!output.isValid()[0]) {
+            throw new Error('Glueing went wrong:\n' +
+                output.isValid()[1]);
+        }
         return output;
     }
     /**
@@ -354,10 +476,16 @@ class Cell1 extends Cell {
      */
     glue1in1(glued, newCell) {
         // If this is the edge, just replace it
-        if (this.inList(glued)) {
+        if (this.indexOf(glued) >= 0) {
             return newCell;
         }
         return this;
+    }
+    /**
+   * @returns the same edge, in reverse
+   */
+    reverse() {
+        return Cell1.v1v2(this.name + '\'', this.end(), this.start());
     }
 }
 exports.Cell1 = Cell1;
@@ -399,7 +527,7 @@ class Cell0 extends Cell {
      */
     glue0in0(glued, newCell) {
         // If c is the vertex, just replace it
-        if (this.inList(glued)) {
+        if (this.indexOf(glued) >= 0) {
             return newCell;
         }
         return this;
@@ -470,13 +598,39 @@ class Attach {
             return [true, ''];
         }
         else if (this.dim == 2) {
+            const n = this.targets.length;
             this.targets.forEach((e) => {
                 if (e.dim !== 1) {
                     return [false, 'Attached 2-cell to something other than 1-cell'];
                 }
             });
-            if (this.targets.length !== this.oriented.length) {
+            if (n !== this.oriented.length) {
                 return [false, 'Wrong length of oriented'];
+            }
+            let isCircular = true;
+            let correctEdges = true;
+            this.targets.forEach((e, i) => {
+                const e2 = this.targets[(i + 1) % n];
+                if (e instanceof Cell1 && e2 instanceof Cell1) {
+                    const v1 = e.end(this.oriented[i]);
+                    const v2 = e2.start(this.oriented[(i + 1) % n]);
+                    /* console.log(`Glueing ${e.toString()}
+                    with ${e2.toString()}:`);
+                    console.log(`Vertex ${v1.toString()}
+                    and vertex ${v2.toString()} match: ${v1.equals(v2)}`); */
+                    if (!v1.equals(v2)) {
+                        isCircular = false;
+                    }
+                }
+                else {
+                    correctEdges = false;
+                }
+            });
+            if (!isCircular) {
+                return [false, 'Vertices don\'t line up'];
+            }
+            if (!correctEdges) {
+                return [false, 'Faces are not 1-cells'];
             }
             return [true, ''];
         }
