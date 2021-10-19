@@ -332,12 +332,12 @@ describe('edges can be glued', () => {
   });
 
 
-  it.only('can make a sphere', () => {
+  it('can make a sphere', () => {
     const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
       {e: D.edge(1).e, or: false}],
-    e1, 'Cylinder');
-    const D3 = D2.glue1in2([{e: D.edge(2).e, or: true},
-      {e: D.edge(3).e, or: false}], e2, 'Sphere');
+    e1, 'Cone');
+    const D3 = D2.glue1in2([{e: D2.edge(2).e, or: true},
+      {e: D2.edge(3).e, or: false}], e2, 'Sphere');
 
     checkSquareLabels(D3, 'Sphere',
         ['e1', 'e1', 'e2', 'e2'],
@@ -357,8 +357,8 @@ describe('edges can be glued', () => {
     const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
       {e: D.edge(2).e, or: true}], e1, 'Mobius');
 
-    const D3 = D2.glue1in2([{e: D.edge(1).e, or: true},
-      {e: D.edge(3).e, or: true}], e2, 'RP2');
+    const D3 = D2.glue1in2([{e: D2.edge(1).e, or: true},
+      {e: D2.edge(3).e, or: true}], e2, 'RP2');
 
     checkSquareLabels(D3, 'RP2',
         ['e1', 'e2', 'e1', 'e2'],
