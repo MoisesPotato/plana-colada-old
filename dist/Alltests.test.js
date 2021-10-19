@@ -16,23 +16,24 @@ function checkSquareLabels(c, name, e, v) {
         try {
             expect(c.isValid()[0]).toBe(true);
         }
-        catch (_a) {
+        catch (e) {
+            console.log();
             console.log('Invalid cell:');
             console.log(c.isValid()[1]);
             console.log(c.toString());
-            throw new Error();
+            throw e;
         }
         /*     console.log(`Edges:${e}
-    Real edges:${c.toString()}`);
+    Real edges:${c.toString()}`); */
         const n = e.length;
-        e.forEach((x, i) =>{
-          expect(c.attachingMap.targets[i].toString())
-              .toBe(`${e[i]}: ${v[i]} ---> ${v[(i + 1) % n]}`);
-          expect(c.attachingMap.targets[i].start().toString())
-              .toBe(`${v[i]}`);
-          expect(c.attachingMap.targets[i].end().toString())
-              .toBe(`${v[(i + 1) % n]}`);
-        }); */
+        e.forEach((x, i) => {
+            expect(c.attachingMap.targets[i].toString())
+                .toBe(`${e[i]}: ${v[i]} ---> ${v[(i + 1) % n]}`);
+            expect(c.attachingMap.targets[i].start().toString())
+                .toBe(`${v[i]}`);
+            expect(c.attachingMap.targets[i].end().toString())
+                .toBe(`${v[(i + 1) % n]}`);
+        });
         expect(c.name).toBe(name);
         expect(c.attachingMap.dim).toBe(2);
         expect(c.attachingMap.isValid()[0]).toBe(true);
@@ -156,19 +157,21 @@ describe('Cells can be glued', () => {
         expect(e5.cells0).toEqual(e1.cells0);
     });
     it('1-cells inside of 2-cells', () => {
-        const D2 = D.glue1in2([], D.cells1[0], 'D2');
+        const D2 = D.glue1in2([], [], D.cells1[0], 'D2');
         checkSquareLabels(D2, 'D2', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
         checkSquareLabels(D, 'D', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
-        const D3 = D2.glue1in2([D2.cells1[0]], e1, 'D3');
+        const D3 = D2.glue1in2([D2.cells1[0]], [true], e1, 'D3');
         checkSquareLabels(D2, 'D2', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
         checkSquareLabels(D3, 'D3', ['e1', 'D-e1', 'D-e2', 'D-e3'], ['e1-start', 'e1-end', 'D-v2', 'D-v3']);
-        const D4 = D3.glue1in2([D2.cells1[0], D2.cells1[2]], e1, 'D4');
+        const D4 = D3.glue1in2([D2.cells1[0], D2.cells1[2]], [true, false], e1, 'D4');
         checkSquareLabels(D4, 'D4', ['e1', 'D-e1', 'e1', 'D-e3'], ['e1-start', 'e1-end', 'e1-start', 'e1-end']);
         checkSquareLabels(D3, 'D3', ['e1', 'D-e1', 'D-e2', 'D-e3'], ['e1-start', 'e1-end', 'D-v2', 'D-v3']);
         checkSquareLabels(D2, 'D2', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
-        const D5 = D4.glue1in2([D4.cells1[1], D4.cells1[1]], e2, 'D5');
+        const Torus = D4.glue1in2([D4.cells1[1], D4.cells1[2]], [true, false], e2, 'Torus');
         checkSquareLabels(D4, 'D4', ['e1', 'D-e1', 'e1', 'D-e3'], ['e1-start', 'e1-end', 'e1-start', 'e1-end']);
-        checkSquareLabels(D5, 'D5', ['e1', 'e2', 'e1', 'e2'], ['e2-start', 'e2-start', 'e2-start', 'e2-start']);
+        checkSquareLabels(Torus, 'Torus', ['e1', 'e2', 'e1', 'e2'], ['e2-start', 'e2-start', 'e2-start', 'e2-start']);
+        const D6 = D.glue1in2([D.cells1[0], D.cells1[1]], [true, false], e1, 'D6');
+        checkSquareLabels(D6, 'D6', ['e1', 'e1', 'D-e2', 'D-e3'], ['e1-start', 'e1-end', 'e1-start', 'D-v3']);
     });
 });
 describe(('1 cells '), () => {

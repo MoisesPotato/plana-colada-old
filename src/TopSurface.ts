@@ -290,23 +290,36 @@ export class Cell2 extends Cell {
    * Glues subcells together into a new cell
    * @param glued the labels of the subcells that will be glued together
    * expected to be all the same dimension
+   * @param oriented true means we will glue start with start and end to end
    * @param newCell the new cell created from combining these two
    * @param newName new name, optional
    * @returns a new cell with fewer subcells
    */
-  glue1in2(glued:Cell1[], newCell:Cell1, newName = this.name):typeof this {
+  glue1in2(glued:Cell1[],
+      oriented:boolean[],
+      newCell:Cell1,
+      newName = this.name):typeof this {
+    if (oriented.length !== glued.length) {
+      throw new Error(`Provided ${glued.length} cells to glue
+and ${oriented.length} orientation labels`);
+    }
+    // console.log(`Orientations: ${oriented}`);
+
     let output = this.copy() as typeof this;
+
     let gluedstarts = [] as Cell0[];
     let gluedends = [] as Cell0[];
-    glued.forEach((e) => gluedstarts.push(e.start()));
-    glued.forEach((e) => gluedends.push(e.end()));
+    /*     Everything that is going to the
+    start of newCell (which might be the endpoints) */
+    glued.forEach((e, i) => gluedstarts.push(e.start(oriented[i])));
+    glued.forEach((e, i) => gluedends.push(e.end(oriented[i])));
     gluedstarts = Cell.removeDuplicates(gluedstarts);
     gluedends = Cell.removeDuplicates(gluedends);
     if (Cell.listsIntersect(gluedstarts, gluedends)) {
-      console.log('They intersect!');
+      // console.log('They intersect!');
       newCell = newCell.glue0in1(newCell.cells0, newCell.cells0[0]);
       gluedstarts = Cell.removeDuplicates(gluedstarts.concat([...gluedends]));
-      console.log(gluedstarts);
+      // console.log(gluedstarts);
       output = output.glue0in2(gluedstarts, newCell.start());
     } else {
       output = output.glue0in2(gluedstarts, newCell.start());
@@ -317,12 +330,32 @@ export class Cell2 extends Cell {
     output.cells1 = Cell.removeDuplicates(output.cells1);
     // Change the vertices of the edges appearing in the attaching map
     output.attachingMap.targets = output.attachingMap.targets.map(
-        (e) => e.glue1in1( glued, newCell),
+        (e, i) => {
+          const replacement = e.glue1in1(glued, newCell);
+          if (replacement.name !== e.name) {
+            /*             console.log(`We replaced the ${i}th edge.
+It was originally oriented: ${this.attachingMap.oriented[i]},
+And we had to glue it the same way: ${oriented[i]},
+so now it's oriented: ${this.attachingMap.oriented[i] == oriented[i]}`); */
+            this.attachingMap.oriented[i] =
+            (this.attachingMap.oriented[i] == oriented[i]);
+          }
+          return e.glue1in1(glued, newCell);
+        },
     );
 
     if (!output.isValid()[0]) {
       throw new Error('Glueing went wrong:\n'+
-      output.isValid()[1],
+      'Trying to glue\n'+
+      glued.toString()+'\n'+
+      'in the cell\n'+
+      this.toString()+'\n'+
+      'with orientations'+'\n'+
+      oriented+'\n'+
+      'obtained\n'+
+      output.isValid()[1]+'\n'+
+      'output:\n'+
+      output.toString(),
       );
     }
     output.name = newName;
@@ -351,7 +384,7 @@ export class Cell2 extends Cell {
         output = output + '\n' + e.toString();
       } else {
         const e2 = e.reverse();
-        output = output + '\n' + e2.toString();
+        output = output + '\n' + e2.toString() + ' (this is reversed)';
       }
     });
     return output;
