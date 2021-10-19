@@ -184,6 +184,14 @@ class Cell2 extends Cell {
         return [true, ''];
     }
     /**
+     * @param i index
+     * @returns e:ith edge, or:glueing side
+   */
+    edge(i) {
+        return { e: this.attachingMap.targets[i],
+            or: this.attachingMap.oriented[i] };
+    }
+    /**
      *
      * @param name label
      * @param edges array of the edges
@@ -254,27 +262,31 @@ class Cell2 extends Cell {
      * This requires I think recursion
      * to induct in both the dimension of the glue cell and of this
      * Glues subcells together into a new cell
-     * @param glued the labels of the subcells that will be glued together
-     * expected to be all the same dimension
-     * @param oriented true means we will glue start with start and end to end
+     * @param glued for the subcells that will be glued together
+     * {e:cell1, or:sidefor glueing}
      * @param newCell the new cell created from combining these two
      * @param newName new name, optional
      * @returns a new cell with fewer subcells
      */
-    glue1in2(glued, oriented, newCell, newName = this.name) {
-        if (oriented.length !== glued.length) {
-            throw new Error(`Provided ${glued.length} cells to glue
-and ${oriented.length} orientation labels`);
-        }
+    glue1in2(glued, newCell, newName = this.name) {
+        /* console.log('Start: Trying to glue\n'+
+          glued.toString()+'\n'+
+          'in the cell\n'+
+          this.toString()+'\n'+
+          'with orientations'+'\n'+
+          oriented); */
         // console.log(`Orientations: ${oriented}`);
+        const cellList = glued.map((edge) => edge.e);
+        const orientationList = glued.map((edge) => edge.or);
         let output = this.copy();
         let gluedstarts = [];
         let gluedends = [];
         /*     Everything that is going to the
         start of newCell (which might be the endpoints) */
-        glued.forEach((e, i) => gluedstarts.push(e.start(oriented[i])));
-        glued.forEach((e, i) => gluedends.push(e.end(oriented[i])));
+        glued.forEach((edge) => gluedstarts.push(edge.e.start(edge.or)));
+        glued.forEach((edge) => gluedends.push(edge.e.end(edge.or)));
         gluedstarts = Cell.removeDuplicates(gluedstarts);
+        console.log(gluedstarts);
         gluedends = Cell.removeDuplicates(gluedends);
         if (Cell.listsIntersect(gluedstarts, gluedends)) {
             // console.log('They intersect!');
@@ -288,29 +300,23 @@ and ${oriented.length} orientation labels`);
             output = output.glue0in2(gluedends, newCell.end());
         }
         // Change its edges to the new cell (this includes the attaching maps)
-        output.cells1 = output.cells1.map((e) => e.glue1in1(glued, newCell));
+        output.cells1 = output.cells1.map((e) => e.glue1in1(cellList, newCell));
         output.cells1 = Cell.removeDuplicates(output.cells1);
         // Change the vertices of the edges appearing in the attaching map
         output.attachingMap.targets = output.attachingMap.targets.map((e, i) => {
-            const replacement = e.glue1in1(glued, newCell);
-            if (replacement.name !== e.name) {
-                /*             console.log(`We replaced the ${i}th edge.
-    It was originally oriented: ${this.attachingMap.oriented[i]},
-    And we had to glue it the same way: ${oriented[i]},
-    so now it's oriented: ${this.attachingMap.oriented[i] == oriented[i]}`); */
-                this.attachingMap.oriented[i] =
-                    (this.attachingMap.oriented[i] == oriented[i]);
-            }
-            return e.glue1in1(glued, newCell);
+            const { e: replaceMent, or: orientation } = e.glue1in1withOrientations(cellList, orientationList, newCell);
+            output.attachingMap.oriented[i] =
+                (output.attachingMap.oriented[i] == orientation);
+            return replaceMent;
         });
         if (!output.isValid()[0]) {
             throw new Error('Glueing went wrong:\n' +
                 'Trying to glue\n' +
-                glued.toString() + '\n' +
+                cellList.toString() + '\n' +
                 'in the cell\n' +
                 this.toString() + '\n' +
                 'with orientations' + '\n' +
-                oriented + '\n' +
+                orientationList + '\n' +
                 'obtained\n' +
                 output.isValid()[1] + '\n' +
                 'output:\n' +
@@ -510,6 +516,22 @@ class Cell1 extends Cell {
         return this;
     }
     /**
+     * Glues subcells together into a new cell. Doesn't alter the original
+     * @param gluedCells the labels of the subcells that will be glued together
+     * expected to be all the same dimension
+     * @param orientations which side each one goes
+     * @param newCell the new cell created from combining these two
+     * @returns a new cell with fewer subcells
+     */
+    glue1in1withOrientations(gluedCells, orientations, newCell) {
+        // If this is the edge, just replace it
+        const j = this.indexOf(gluedCells);
+        if (j >= 0) {
+            return { e: newCell, or: orientations[j] };
+        }
+        return { e: this, or: true };
+    }
+    /**
    * @returns the same edge, in reverse
    */
     reverse() {
@@ -642,11 +664,11 @@ class Attach {
                 if (e instanceof Cell1 && e2 instanceof Cell1) {
                     const v1 = e.end(this.oriented[i]);
                     const v2 = e2.start(this.oriented[(i + 1) % n]);
-                    /* console.log(`Glueing ${e.toString()}
-                    with ${e2.toString()}:`);
-                    console.log(`Vertex ${v1.toString()}
-                    and vertex ${v2.toString()} match: ${v1.equals(v2)}`); */
                     if (!v1.equals(v2)) {
+                        console.log(`Glueing ${e.toString()} (${this.oriented[i]})
+            with ${e2.toString()}(${this.oriented[(i + 1) % n]}):`);
+                        console.log(`Vertex ${v1.toString()}
+            and vertex ${v2.toString()} match: ${v1.equals(v2)}`);
                         isCircular = false;
                     }
                 }

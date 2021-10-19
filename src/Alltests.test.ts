@@ -28,18 +28,24 @@ function checkSquareLabels(c:Cell2, name:string,
 Real edges:${c.toString()}`); */
     const n = e.length;
     e.forEach((x, i) =>{
-      expect(c.attachingMap.targets[i].toString())
-          .toBe(`${e[i]}: ${v[i]} ---> ${v[(i + 1) % n]}`);
-      expect(c.attachingMap.targets[i].start().toString())
+      if (c.attachingMap.oriented[i]) {
+        expect(c.attachingMap.targets[i].toString())
+            .toBe(`${e[i]}: ${v[i]} ---> ${v[(i + 1) % n]}`);
+      } else {
+        expect(c.attachingMap.targets[i].toString())
+            .toBe(`${e[i]}: ${v[(i + 1) % n]} ---> ${v[i]}`);
+      }
+      expect(c.attachingMap.targets[i]
+          .start(c.attachingMap.oriented[i]).toString())
           .toBe(`${v[i]}`);
-      expect(c.attachingMap.targets[i].end().toString())
+      expect(c.attachingMap.targets[i]
+          .end(c.attachingMap.oriented[i]).toString())
           .toBe(`${v[(i + 1) % n]}`);
     });
 
     expect(c.name).toBe(name);
     expect(c.attachingMap.dim).toBe(2);
     expect(c.attachingMap.isValid()[0]).toBe(true);
-    expect(c.attachingMap.oriented).toEqual(Array(4).fill(true));
   } catch (error) {
     console.log(error);
     console.log(`Didn't match this cell:\n
@@ -103,7 +109,6 @@ describe('Cells can be glued', () => {
   const v1 = new Cell0('a');
   const v2 = new Cell0('b');
   const e1 = Cell1.v1v2('e1');
-  const e2 = Cell1.v1v2('e2');
   const D = Cell2.disk(4, 'D');
   it('0-cells inside of 0-cells', ()=>{
     expect(v1.glue0in0( [v1], v2)).toEqual(v2);
@@ -209,9 +214,15 @@ describe('Cells can be glued', () => {
     expect(e4.cells0).toEqual(e2.cells0);
     expect(e5.cells0).toEqual(e1.cells0);
   });
+});
 
-  it('1-cells inside of 2-cells', () => {
-    const D2 = D.glue1in2([], [], D.cells1[0], 'D2');
+describe('edges can be glued', () => {
+  const e1 = Cell1.v1v2('e1', 'a', 'b');
+  const e2 = Cell1.v1v2('e2', 'c', 'd');
+  const D = Cell2.disk(4, 'D');
+
+  it('can make an empty glueing', () => {
+    const D2 = D.glue1in2([], D.cells1[0], 'D2');
     checkSquareLabels(D2, 'D2',
         ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
         ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
@@ -220,55 +231,147 @@ describe('Cells can be glued', () => {
     checkSquareLabels(D, 'D',
         ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
         ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
 
-    const D3 = D2.glue1in2([D2.cells1[0]], [true], e1, 'D3');
+  it('can replace one edge in a square', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true}], e1, 'Square');
+    checkSquareLabels(D2, 'Square',
+        ['e1', 'D-e1', 'D-e2', 'D-e3'],
+        ['a', 'b', 'D-v2', 'D-v3']);
 
 
-    checkSquareLabels(D2, 'D2',
+    checkSquareLabels(D, 'D',
         ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
         ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
 
 
-    checkSquareLabels(D3, 'D3',
+  it('can replace one edge in a square backwards', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: false}], e1, 'Square');
+    checkSquareLabels(D2, 'Square',
         ['e1', 'D-e1', 'D-e2', 'D-e3'],
-        ['e1-start', 'e1-end', 'D-v2', 'D-v3']);
+        ['b', 'a', 'D-v2', 'D-v3']);
 
 
-    const D4 = D3.glue1in2([D2.cells1[0], D2.cells1[2]],
-        [true, false], e1, 'D4');
-
-    checkSquareLabels(D4, 'D4',
-        ['e1', 'D-e1', 'e1', 'D-e3'],
-        ['e1-start', 'e1-end', 'e1-start', 'e1-end']);
-
-
-    checkSquareLabels(D3, 'D3',
-        ['e1', 'D-e1', 'D-e2', 'D-e3'],
-        ['e1-start', 'e1-end', 'D-v2', 'D-v3']);
-
-    checkSquareLabels(D2, 'D2',
+    checkSquareLabels(D, 'D',
         ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
         ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
 
-    const Torus = D4.glue1in2([D4.cells1[1], D4.cells1[2]],
-        [true, false], e2, 'Torus');
-
-
-    checkSquareLabels(D4, 'D4',
+  it('can identify two opposite edges', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(2).e, or: false}],
+    e1, 'Cylinder');
+    checkSquareLabels(D2, 'Cylinder',
         ['e1', 'D-e1', 'e1', 'D-e3'],
-        ['e1-start', 'e1-end', 'e1-start', 'e1-end']);
+        ['a', 'b', 'b', 'a']);
 
 
-    checkSquareLabels(Torus, 'Torus',
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
+
+  it('can make a Mobius band', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(2).e, or: true}], e1, 'Mobius');
+
+    checkSquareLabels(D2, 'Mobius',
+        ['e1', 'D-e1', 'e1', 'D-e3'],
+        ['a', 'b', 'a', 'b']);
+
+
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
+
+
+  it('can make a torus', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(2).e, or: false}],
+    e1, 'Cylinder');
+
+    const D3 = D2.glue1in2([{e: D2.edge(1).e, or: true},
+      {e: D2.edge(3).e, or: false}], e2, 'Torus');
+
+    checkSquareLabels(D3, 'Torus',
         ['e1', 'e2', 'e1', 'e2'],
-        ['e2-start', 'e2-start', 'e2-start', 'e2-start']);
+        ['c', 'c', 'c', 'c']);
 
-    const D6 = D.glue1in2([D.cells1[0], D.cells1[1]], [true, false], e1, 'D6');
+    checkSquareLabels(D2, 'Cylinder',
+        ['e1', 'D-e1', 'e1', 'D-e3'],
+        ['a', 'b', 'b', 'a']);
 
-    checkSquareLabels(D6, 'D6',
+
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
+
+  it('can make a Klein Bottle', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(2).e, or: false}],
+    e1, 'Cylinder');
+
+    const D3 = D2.glue1in2([{e: D2.edge(1).e, or: true},
+      {e: D2.edge(3).e, or: true}], e2, 'Klein');
+
+    checkSquareLabels(D3, 'Klein',
+        ['e1', 'e2', 'e1', 'e2'],
+        ['c', 'c', 'c', 'c']);
+
+    checkSquareLabels(D2, 'Cylinder',
+        ['e1', 'D-e1', 'e1', 'D-e3'],
+        ['a', 'b', 'b', 'a']);
+
+
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
+
+
+  it.only('can make a sphere', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(1).e, or: false}],
+    e1, 'Cylinder');
+    const D3 = D2.glue1in2([{e: D.edge(2).e, or: true},
+      {e: D.edge(3).e, or: false}], e2, 'Sphere');
+
+    checkSquareLabels(D3, 'Sphere',
+        ['e1', 'e1', 'e2', 'e2'],
+        ['c', 'b', 'c', 'd']);
+
+    checkSquareLabels(D2, 'Cone',
         ['e1', 'e1', 'D-e2', 'D-e3'],
-        ['e1-start', 'e1-end', 'e1-start', 'D-v3']);
-  } );
+        ['a', 'b', 'a', 'D-v3']);
+
+
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
+
+  it('can make RP2', () => {
+    const D2 = D.glue1in2([{e: D.edge(0).e, or: true},
+      {e: D.edge(2).e, or: true}], e1, 'Mobius');
+
+    const D3 = D2.glue1in2([{e: D.edge(1).e, or: true},
+      {e: D.edge(3).e, or: true}], e2, 'RP2');
+
+    checkSquareLabels(D3, 'RP2',
+        ['e1', 'e2', 'e1', 'e2'],
+        ['d', 'c', 'd', 'c']);
+
+    checkSquareLabels(D2, 'Mobius',
+        ['e1', 'D-e1', 'e1', 'D-e3'],
+        ['a', 'b', 'a', 'b']);
+
+    checkSquareLabels(D, 'D',
+        ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
+        ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
+  });
 });
 
 describe(('1 cells '), () => {
