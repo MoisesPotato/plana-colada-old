@@ -286,7 +286,6 @@ class Cell2 extends Cell {
         glued.forEach((edge) => gluedstarts.push(edge.e.start(edge.or)));
         glued.forEach((edge) => gluedends.push(edge.e.end(edge.or)));
         gluedstarts = Cell.removeDuplicates(gluedstarts);
-        console.log(gluedstarts);
         gluedends = Cell.removeDuplicates(gluedends);
         if (Cell.listsIntersect(gluedstarts, gluedends)) {
             // console.log('They intersect!');
@@ -665,10 +664,10 @@ class Attach {
                     const v1 = e.end(this.oriented[i]);
                     const v2 = e2.start(this.oriented[(i + 1) % n]);
                     if (!v1.equals(v2)) {
-                        console.log(`Glueing ${e.toString()} (${this.oriented[i]})
-            with ${e2.toString()}(${this.oriented[(i + 1) % n]}):`);
+                        /* console.log(`Glueing ${e.toString()} (${this.oriented[i]})
+                        with ${e2.toString()}(${this.oriented[(i + 1) % n]}):`);
                         console.log(`Vertex ${v1.toString()}
-            and vertex ${v2.toString()} match: ${v1.equals(v2)}`);
+                        and vertex ${v2.toString()} match: ${v1.equals(v2)}`); */
                         isCircular = false;
                     }
                 }
