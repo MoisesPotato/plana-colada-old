@@ -95,6 +95,9 @@ describe('Cells ', () =>{
     const list2 = Cell.removeDuplicates([e1, e2, e1, e2, e2]);
     expect(list2.length).toBe(2);
     expect(list2).toEqual([e1, e2]);
+    const list3 = Cell.mergeLists([[], [e1, e2],
+      [e1, e2, e1], [e1, e1, e1], [v1, e2]]);
+    expect(list3).toEqual([e1, e2, v1]);
   });
 
   it('compares sets', () => {
@@ -576,7 +579,7 @@ describe('Can make from glueing labels', ()=>{
   //   console.log(square.toString());
   // });
 
-  it.only('A Torus', () => {
+  it('A Torus', () => {
     const Torus = Cell2.fromString(`aba'b'`, 'T2');
     const Sphere = Cell2.fromString(`aa'`, 'S2');
     const Klein = Cell2.fromString(`abab'`, 'K');

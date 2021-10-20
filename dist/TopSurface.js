@@ -128,6 +128,18 @@ class Cell {
         }
         return false;
     }
+    /**
+     * @returns the array without duplicates
+     * @param list an array of cell arrays
+     */
+    static mergeLists(list) {
+        let output = [];
+        list.forEach((A) => {
+            output = output.concat(A);
+        });
+        output = Cell.removeDuplicates(output);
+        return output;
+    }
 }
 exports.Cell = Cell;
 /**
