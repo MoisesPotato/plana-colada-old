@@ -349,6 +349,30 @@ class Cell2 extends Cell {
         });
         return output;
     }
+    /**
+     *
+     * @param name the name
+     * @param edges edges to attach, in order
+     * @param rightWay if true, same direction, if false, other way
+     * @returns a cell from these edges
+     */
+    static attachToEdges(name, edges, rightWay) {
+        let vertices = [];
+        edges.forEach((e) => {
+            vertices.push(e.start());
+            vertices.push(e.end());
+        });
+        vertices = Cell.removeDuplicates(vertices);
+        const attaching = new Attach(2, edges, rightWay);
+        const output = new Cell2(name, attaching, Cell.removeDuplicates(edges), vertices);
+        const [valid, message] = output.isValid();
+        if (valid) {
+            return output;
+        }
+        else {
+            throw new Error('These edges don\'t glue that way!\n' + message);
+        }
+    }
 }
 exports.Cell2 = Cell2;
 /**
@@ -400,7 +424,7 @@ class Cell1 extends Cell {
    * @return {Cell1} a new 1-cell with these endpoints
    * the default endspoints are name-start and name-end
    */
-    static v1v2(name, start, end) {
+    static join2(name, start, end) {
         start = start || (name + '-start');
         end = end || (name + '-end');
         const v1 = Cell0.fromString(start);
@@ -445,7 +469,7 @@ class Cell1 extends Cell {
         const vertices = keys.map((i) => new Cell0(vertexLabels[i]));
         // Make it so the n+1st loops back
         vertices.push(vertices[0]);
-        const edges = keys.map((i) => Cell1.v1v2(edgeLabels[i], vertices[i], vertices[i + 1]));
+        const edges = keys.map((i) => Cell1.join2(edgeLabels[i], vertices[i], vertices[i + 1]));
         return edges;
     }
     /**
@@ -534,7 +558,7 @@ class Cell1 extends Cell {
    * @returns the same edge, in reverse
    */
     reverse() {
-        return Cell1.v1v2(this.name + '\'', this.end(), this.start());
+        return Cell1.join2(this.name + '\'', this.end(), this.start());
     }
 }
 exports.Cell1 = Cell1;

@@ -71,8 +71,8 @@ describe(('0 cells '), () => {
 describe('Cells ', () =>{
   const v1 = new Cell0('a');
   const v2 = new Cell0('b');
-  const e1 = Cell1.v1v2('e1');
-  const e2 = Cell1.v1v2('e2', 'a', 'a');
+  const e1 = Cell1.join2('e1');
+  const e2 = Cell1.join2('e2', 'a', 'a');
 
   it('recognize equality', () => {
     expect(v1.equals(v1)).toBe(true);
@@ -108,7 +108,7 @@ describe('Cells ', () =>{
 describe('Cells can be glued', () => {
   const v1 = new Cell0('a');
   const v2 = new Cell0('b');
-  const e1 = Cell1.v1v2('e1');
+  const e1 = Cell1.join2('e1');
   const D = Cell2.disk(4, 'D');
   it('0-cells inside of 0-cells', ()=>{
     expect(v1.glue0in0( [v1], v2)).toEqual(v2);
@@ -197,8 +197,8 @@ describe('Cells can be glued', () => {
   });
 
   it('1-cells inside of 1-cells', () => {
-    const e1 = Cell1.v1v2('e', 'a', 'b');
-    const e2 = Cell1.v1v2('f', 'b', 'c');
+    const e1 = Cell1.join2('e', 'a', 'b');
+    const e2 = Cell1.join2('f', 'b', 'c');
 
     const e3 = e1.glue1in1([], e2);
     expect(e3.toString()).toBe('e: a ---> b');
@@ -217,8 +217,8 @@ describe('Cells can be glued', () => {
 });
 
 describe('edges can be glued', () => {
-  const e1 = Cell1.v1v2('e1', 'a', 'b');
-  const e2 = Cell1.v1v2('e2', 'c', 'd');
+  const e1 = Cell1.join2('e1', 'a', 'b');
+  const e2 = Cell1.join2('e2', 'c', 'd');
   const D = Cell2.disk(4, 'D');
 
   it('can make an empty glueing', () => {
@@ -376,7 +376,7 @@ describe('edges can be glued', () => {
 
 describe(('1 cells '), () => {
   it('have vertices', ()=> {
-    const e = Cell1.v1v2('e', 'a', 'b');
+    const e = Cell1.join2('e', 'a', 'b');
     expect(e.cells0[0].toString()).toBe('a');
     expect(e.cells0[1].toString()).toBe('b');
     expect(e.start().toString()).toBe('a');
@@ -400,16 +400,174 @@ describe('2-cells ', () =>{
         ['D-e0', 'D-e1', 'D-e2', 'D-e3'],
         ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
   });
-
-
-  it.skip(' can have identified edges', ()=> {
-    const f = Cell2.fromLabels(4,
-        [[1, 3, true], [2, 4, true]]);
-    expect(f.cells0.length).toBe(1);
-    expect(f.cells1.length).toBe(2);
-  });
 },
 );
+
+
+describe('I can make surfaces', () =>{
+  it('I can make a disk:', () => {
+    const a = new Cell0('a');
+    const b = new Cell0('b');
+    const c = new Cell0('c');
+    const d = new Cell0('d');
+    const A = Cell1.join2('A', a, b);
+    const B = Cell1.join2('B', b, c);
+    const C = Cell1.join2('C', c, d);
+    const D = Cell1.join2('D', d, a);
+    const Square = Cell2.attachToEdges('Square',
+        [A, B, C, D],
+        [true, true, true, true]);
+    expect(Square.toString()).toBe(
+        'Square:\n'+
+        'A: a ---> b\n'+
+        'B: b ---> c\n'+
+        'C: c ---> d\n'+
+        'D: d ---> a');
+  });
+
+
+  it('I can make a cylinder:', () => {
+    const a = new Cell0('a');
+    const b = new Cell0('b');
+    const A = Cell1.join2('A', a, b);
+    const B = Cell1.join2('B', b, b);
+    const C = Cell1.join2('C', a, a);
+    const Cylinder = Cell2.attachToEdges('Cylinder',
+        [A, B, A, C],
+        [true, true, false, true]);
+    expect(Cylinder.toString()).toBe(
+        'Cylinder:\n'+
+        'A: a ---> b\n'+
+        'B: b ---> b\n'+
+        'A\': b ---> a (this is reversed)\n'+
+        'C: a ---> a');
+  });
+
+
+  it('I can make a Mobius strip:', () => {
+    const a = new Cell0('a');
+    const b = new Cell0('b');
+    const A = Cell1.join2('A', a, b);
+    const B = Cell1.join2('B', b, a);
+    const C = Cell1.join2('C', b, a);
+    const Mobius = Cell2.attachToEdges('Mobius',
+        [A, B, A, C],
+        [true, true, true, true]);
+    expect(Mobius.toString()).toBe(
+        'Mobius:\n'+
+        'A: a ---> b\n'+
+        'B: b ---> a\n'+
+        'A: a ---> b\n'+
+        'C: b ---> a');
+  });
+
+
+  it('I can make a Torus:', () => {
+    const a = new Cell0('a');
+    const A = Cell1.join2('A', a, a);
+    const B = Cell1.join2('B', a, a);
+    const Torus = Cell2.attachToEdges('Torus',
+        [A, B, A, B],
+        [true, true, false, false]);
+    expect(Torus.toString()).toBe(
+        'Torus:\n'+
+        'A: a ---> a\n'+
+        'B: a ---> a\n'+
+        'A\': a ---> a (this is reversed)\n'+
+        'B\': a ---> a (this is reversed)');
+  });
+
+
+  it('I can make a sphere:', () => {
+    const a = new Cell0('a');
+    const b = new Cell0('b');
+    const c = new Cell0('c');
+    const A = Cell1.join2('A', a, b);
+    const B = Cell1.join2('B', a, c);
+    const Sphere = Cell2.attachToEdges('Sphere',
+        [A, A, B, B],
+        [true, false, true, false]);
+    expect(Sphere.toString()).toBe(
+        'Sphere:\n'+
+        'A: a ---> b\n'+
+        'A\': b ---> a (this is reversed)\n'+
+        'B: a ---> c\n'+
+        'B\': c ---> a (this is reversed)');
+  });
+
+
+  it('I can make a Klein Bottle:', () => {
+    const a = new Cell0('a');
+    const A = Cell1.join2('A', a, a);
+    const B = Cell1.join2('B', a, a);
+    const Torus = Cell2.attachToEdges('Torus',
+        [A, B, A, B],
+        [true, true, false, true]);
+    expect(Torus.toString()).toBe(
+        'Torus:\n'+
+        'A: a ---> a\n'+
+        'B: a ---> a\n'+
+        'A\': a ---> a (this is reversed)\n'+
+        'B: a ---> a');
+  });
+
+
+  it('I can make RP2:', () => {
+    const a = new Cell0('a');
+    const b = new Cell0('b');
+    const A = Cell1.join2('A', a, b);
+    const B = Cell1.join2('B', b, a);
+    const RP2 = Cell2.attachToEdges('RP2',
+        [A, B, A, B],
+        [true, true, true, true]);
+    expect(RP2.toString()).toBe(
+        'RP2:\n'+
+        'A: a ---> b\n'+
+        'B: b ---> a\n'+
+        'A: a ---> b\n'+
+        'B: b ---> a');
+  });
+});
+
+describe('It catches mistakes', () => {
+  const a = new Cell0('a');
+  const b = new Cell0('b');
+  const A = Cell1.join2('A', a, b);
+  const B = Cell1.join2('B', b, a);
+  const C = Cell1.join2('C', a, b);
+  it('I can make a mistake:', () => {
+    try {
+      Cell2.attachToEdges('Wrong',
+          [A, B, A, C],
+          [true, true, true, true]);
+      throw new Error('Didn\'t fail');
+    } catch (e) {
+      if (e instanceof Error) {
+        expect(e.message).not.toBe('Didn\'t fail');
+      }
+    }
+  });
+  it('I can make a mistake:', () => {
+    try {
+      Cell2.attachToEdges('Wrong',
+          [A, A, A, A],
+          [true, true, true, true]);
+      throw new Error('Didn\'t fail');
+    } catch (e) {
+      if (e instanceof Error) {
+        expect(e.message).not.toBe('Didn\'t fail');
+      }
+    }
+  });
+
+
+  it('I can make a mistake:', () => {
+    Cell2.attachToEdges('Wrong',
+        [A, B],
+        [true, true]);
+  });
+});
+
 
 // describe(('Surfaces '), () =>{
 //   // let S;
@@ -447,7 +605,4 @@ describe.skip('Cx', () => {
     const c = i.times(twoplusi).compare(-1, 2);
     expect(c).toBe(true);
   });
-},
-
-
-);
+});
