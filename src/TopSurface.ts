@@ -397,6 +397,31 @@ export class Cell2 extends Cell {
     });
     return output;
   }
+
+  /**
+   *
+   * @param name the name
+   * @param edges edges to attach, in order
+   * @param rightWay if true, same direction, if false, other way
+   * @returns a cell from these edges
+   */
+  static attachToEdges(name : string, edges:Cell1[], rightWay:boolean[]):Cell2 {
+    let vertices = [] as Cell0[];
+    edges.forEach((e) => {
+      vertices.push(e.start());
+      vertices.push(e.end());
+    });
+    vertices = Cell.removeDuplicates(vertices);
+    const attaching = new Attach(2, edges, rightWay);
+    const output = new Cell2(name, attaching,
+        Cell.removeDuplicates(edges), vertices);
+    const [valid, message] = output.isValid();
+    if (valid) {
+      return output;
+    } else {
+      throw new Error('These edges don\'t glue that way!\n'+message);
+    }
+  }
 }
 
 /**
@@ -453,7 +478,7 @@ export class Cell1 extends Cell {
  * @return {Cell1} a new 1-cell with these endpoints
  * the default endspoints are name-start and name-end
  */
-  static v1v2(name: string, start?:Cell0|string, end?:Cell0|string):Cell1 {
+  static join2(name: string, start?:Cell0|string, end?:Cell0|string):Cell1 {
     start = start || (name + '-start');
     end = end || (name + '-end');
     const v1=Cell0.fromString(start);
@@ -501,7 +526,7 @@ export class Cell1 extends Cell {
     // Make it so the n+1st loops back
     vertices.push(vertices[0]);
     const edges = keys.map((i) =>
-      Cell1.v1v2(edgeLabels[i], vertices[i], vertices[i+1]),
+      Cell1.join2(edgeLabels[i], vertices[i], vertices[i+1]),
     );
     return edges;
   }
@@ -597,7 +622,8 @@ export class Cell1 extends Cell {
  * @returns the same edge, in reverse
  */
   reverse():typeof this {
-    return Cell1.v1v2(this.name +'\'', this.end(), this.start()) as typeof this;
+    return Cell1.join2(this.name +'\'',
+        this.end(), this.start()) as typeof this;
   }
 }
 

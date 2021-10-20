@@ -67,8 +67,8 @@ describe(('0 cells '), () => {
 describe('Cells ', () => {
     const v1 = new TopSurface_1.Cell0('a');
     const v2 = new TopSurface_1.Cell0('b');
-    const e1 = TopSurface_1.Cell1.v1v2('e1');
-    const e2 = TopSurface_1.Cell1.v1v2('e2', 'a', 'a');
+    const e1 = TopSurface_1.Cell1.join2('e1');
+    const e2 = TopSurface_1.Cell1.join2('e2', 'a', 'a');
     it('recognize equality', () => {
         expect(v1.equals(v1)).toBe(true);
         expect(v1.equals(v2)).toBe(false);
@@ -99,7 +99,7 @@ describe('Cells ', () => {
 describe('Cells can be glued', () => {
     const v1 = new TopSurface_1.Cell0('a');
     const v2 = new TopSurface_1.Cell0('b');
-    const e1 = TopSurface_1.Cell1.v1v2('e1');
+    const e1 = TopSurface_1.Cell1.join2('e1');
     const D = TopSurface_1.Cell2.disk(4, 'D');
     it('0-cells inside of 0-cells', () => {
         expect(v1.glue0in0([v1], v2)).toEqual(v2);
@@ -151,8 +151,8 @@ describe('Cells can be glued', () => {
         checkSquareLabels(D2, 'D2', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['a', 'D-v1', 'D-v2', 'D-v3']);
     });
     it('1-cells inside of 1-cells', () => {
-        const e1 = TopSurface_1.Cell1.v1v2('e', 'a', 'b');
-        const e2 = TopSurface_1.Cell1.v1v2('f', 'b', 'c');
+        const e1 = TopSurface_1.Cell1.join2('e', 'a', 'b');
+        const e2 = TopSurface_1.Cell1.join2('f', 'b', 'c');
         const e3 = e1.glue1in1([], e2);
         expect(e3.toString()).toBe('e: a ---> b');
         const e4 = e1.glue1in1([e1, e2], e2);
@@ -164,8 +164,8 @@ describe('Cells can be glued', () => {
     });
 });
 describe('edges can be glued', () => {
-    const e1 = TopSurface_1.Cell1.v1v2('e1', 'a', 'b');
-    const e2 = TopSurface_1.Cell1.v1v2('e2', 'c', 'd');
+    const e1 = TopSurface_1.Cell1.join2('e1', 'a', 'b');
+    const e2 = TopSurface_1.Cell1.join2('e2', 'c', 'd');
     const D = TopSurface_1.Cell2.disk(4, 'D');
     it('can make an empty glueing', () => {
         const D2 = D.glue1in2([], D.cells1[0], 'D2');
@@ -233,7 +233,7 @@ describe('edges can be glued', () => {
 });
 describe(('1 cells '), () => {
     it('have vertices', () => {
-        const e = TopSurface_1.Cell1.v1v2('e', 'a', 'b');
+        const e = TopSurface_1.Cell1.join2('e', 'a', 'b');
         expect(e.cells0[0].toString()).toBe('a');
         expect(e.cells0[1].toString()).toBe('b');
         expect(e.start().toString()).toBe('a');
@@ -251,10 +251,128 @@ describe('2-cells ', () => {
         const disk = TopSurface_1.Cell2.disk(4, 'D');
         checkSquareLabels(disk, 'D', ['D-e0', 'D-e1', 'D-e2', 'D-e3'], ['D-v0', 'D-v1', 'D-v2', 'D-v3']);
     });
-    it.skip(' can have identified edges', () => {
-        const f = TopSurface_1.Cell2.fromLabels(4, [[1, 3, true], [2, 4, true]]);
-        expect(f.cells0.length).toBe(1);
-        expect(f.cells1.length).toBe(2);
+});
+describe('I can make surfaces', () => {
+    it('I can make a disk:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const b = new TopSurface_1.Cell0('b');
+        const c = new TopSurface_1.Cell0('c');
+        const d = new TopSurface_1.Cell0('d');
+        const A = TopSurface_1.Cell1.join2('A', a, b);
+        const B = TopSurface_1.Cell1.join2('B', b, c);
+        const C = TopSurface_1.Cell1.join2('C', c, d);
+        const D = TopSurface_1.Cell1.join2('D', d, a);
+        const Square = TopSurface_1.Cell2.attachToEdges('Square', [A, B, C, D], [true, true, true, true]);
+        expect(Square.toString()).toBe('Square:\n' +
+            'A: a ---> b\n' +
+            'B: b ---> c\n' +
+            'C: c ---> d\n' +
+            'D: d ---> a');
+    });
+    it('I can make a cylinder:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const b = new TopSurface_1.Cell0('b');
+        const A = TopSurface_1.Cell1.join2('A', a, b);
+        const B = TopSurface_1.Cell1.join2('B', b, b);
+        const C = TopSurface_1.Cell1.join2('C', a, a);
+        const Cylinder = TopSurface_1.Cell2.attachToEdges('Cylinder', [A, B, A, C], [true, true, false, true]);
+        expect(Cylinder.toString()).toBe('Cylinder:\n' +
+            'A: a ---> b\n' +
+            'B: b ---> b\n' +
+            'A\': b ---> a (this is reversed)\n' +
+            'C: a ---> a');
+    });
+    it('I can make a Mobius strip:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const b = new TopSurface_1.Cell0('b');
+        const A = TopSurface_1.Cell1.join2('A', a, b);
+        const B = TopSurface_1.Cell1.join2('B', b, a);
+        const C = TopSurface_1.Cell1.join2('C', b, a);
+        const Mobius = TopSurface_1.Cell2.attachToEdges('Mobius', [A, B, A, C], [true, true, true, true]);
+        expect(Mobius.toString()).toBe('Mobius:\n' +
+            'A: a ---> b\n' +
+            'B: b ---> a\n' +
+            'A: a ---> b\n' +
+            'C: b ---> a');
+    });
+    it('I can make a Torus:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const A = TopSurface_1.Cell1.join2('A', a, a);
+        const B = TopSurface_1.Cell1.join2('B', a, a);
+        const Torus = TopSurface_1.Cell2.attachToEdges('Torus', [A, B, A, B], [true, true, false, false]);
+        expect(Torus.toString()).toBe('Torus:\n' +
+            'A: a ---> a\n' +
+            'B: a ---> a\n' +
+            'A\': a ---> a (this is reversed)\n' +
+            'B\': a ---> a (this is reversed)');
+    });
+    it('I can make a sphere:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const b = new TopSurface_1.Cell0('b');
+        const c = new TopSurface_1.Cell0('c');
+        const A = TopSurface_1.Cell1.join2('A', a, b);
+        const B = TopSurface_1.Cell1.join2('B', a, c);
+        const Sphere = TopSurface_1.Cell2.attachToEdges('Sphere', [A, A, B, B], [true, false, true, false]);
+        expect(Sphere.toString()).toBe('Sphere:\n' +
+            'A: a ---> b\n' +
+            'A\': b ---> a (this is reversed)\n' +
+            'B: a ---> c\n' +
+            'B\': c ---> a (this is reversed)');
+    });
+    it('I can make a Klein Bottle:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const A = TopSurface_1.Cell1.join2('A', a, a);
+        const B = TopSurface_1.Cell1.join2('B', a, a);
+        const Torus = TopSurface_1.Cell2.attachToEdges('Torus', [A, B, A, B], [true, true, false, true]);
+        expect(Torus.toString()).toBe('Torus:\n' +
+            'A: a ---> a\n' +
+            'B: a ---> a\n' +
+            'A\': a ---> a (this is reversed)\n' +
+            'B: a ---> a');
+    });
+    it('I can make RP2:', () => {
+        const a = new TopSurface_1.Cell0('a');
+        const b = new TopSurface_1.Cell0('b');
+        const A = TopSurface_1.Cell1.join2('A', a, b);
+        const B = TopSurface_1.Cell1.join2('B', b, a);
+        const RP2 = TopSurface_1.Cell2.attachToEdges('RP2', [A, B, A, B], [true, true, true, true]);
+        expect(RP2.toString()).toBe('RP2:\n' +
+            'A: a ---> b\n' +
+            'B: b ---> a\n' +
+            'A: a ---> b\n' +
+            'B: b ---> a');
+    });
+});
+describe('It catches mistakes', () => {
+    const a = new TopSurface_1.Cell0('a');
+    const b = new TopSurface_1.Cell0('b');
+    const A = TopSurface_1.Cell1.join2('A', a, b);
+    const B = TopSurface_1.Cell1.join2('B', b, a);
+    const C = TopSurface_1.Cell1.join2('C', a, b);
+    it('I can make a mistake:', () => {
+        try {
+            TopSurface_1.Cell2.attachToEdges('Wrong', [A, B, A, C], [true, true, true, true]);
+            throw new Error('Didn\'t fail');
+        }
+        catch (e) {
+            if (e instanceof Error) {
+                expect(e.message).not.toBe('Didn\'t fail');
+            }
+        }
+    });
+    it('I can make a mistake:', () => {
+        try {
+            TopSurface_1.Cell2.attachToEdges('Wrong', [A, A, A, A], [true, true, true, true]);
+            throw new Error('Didn\'t fail');
+        }
+        catch (e) {
+            if (e instanceof Error) {
+                expect(e.message).not.toBe('Didn\'t fail');
+            }
+        }
+    });
+    it('I can make a mistake:', () => {
+        TopSurface_1.Cell2.attachToEdges('Wrong', [A, B], [true, true]);
     });
 });
 // describe(('Surfaces '), () =>{
