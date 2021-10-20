@@ -218,15 +218,88 @@ class Cell2 extends Cell {
     }
     /**
      *TODO
-     * @param n number of edges
-     * @param labels array of {@link glueLabel}
      * @param name label (optional)
+     * @param n number of edges
+     * @param labels {@link glueLabel}
      * telling us how to glue
      * @returns An attaching map
      */
-    static fromLabels(n, labels, name = '') {
-        const C = Cell2.disk(n, name);
+    static fromLabels(name, n, ...labels) {
+        let C = Cell2.disk(n, name);
+        labels.forEach(([i, j, oriented]) => {
+            if ((i >= n) || (j >= n)) {
+                throw new Error('Labels out of range');
+            }
+            const gluedEdges = [C.edge(i), { e: C.edge(j).e, or: !oriented }];
+            C = C.glue1in2(gluedEdges, C.edge(i).e, name);
+        });
         return C;
+    }
+    /**
+   * @returns a polygon with the edges identified as the given string
+   * @param labels a string describing how to glue the polygon edges
+   * @param name optional
+   * E.g. `aba'b'` gives a torus
+   */
+    static fromString(labels, name = labels) {
+        const letters = labels.split('');
+        const distinctLetters = [];
+        let nSides = 0;
+        let trueIndex = -1;
+        // letters.filter((l) => {
+        //   if (l != `'` && distinctLetters.indexOf(l) >= 0) {
+        //     return true;
+        //   }
+        //   return false;
+        // });
+        // const edgeLabels =[] as string[];
+        const labelCount = [];
+        const glueing = [];
+        let lastIndex = -1;
+        letters.forEach((l, i) => {
+            if (l == `'`) {
+                glueing[lastIndex].or = !glueing[lastIndex].or;
+                // console.log(`Found an apostrophe: ${glueing[lastIndex].toString()}`);
+            }
+            else {
+                trueIndex++;
+                nSides++;
+                const j = distinctLetters.indexOf(l);
+                if (j == -1) {
+                    distinctLetters.push(l);
+                    labelCount.push(1);
+                    glueing.push({ thisEdge: trueIndex,
+                        otherEdge: undefined,
+                        or: false });
+                    lastIndex = glueing.length - 1;
+                }
+                else {
+                    lastIndex = j;
+                    labelCount[j] = labelCount[j] + 1;
+                    if (labelCount[j] > 2) {
+                        throw new Error('More than three edges have same name');
+                    }
+                    glueing[j].otherEdge = trueIndex;
+                }
+            }
+            /* console.log(`Finished step ${i - apostropheCount}.
+            Read the letter ${l},
+            The distinct letters we have so far are ${distinctLetters}
+            Of each there are ${labelCount}
+            The glueing data is ${glueing}`); */
+        });
+        let glueLabels = glueing.map(({ thisEdge: i, otherEdge: j, or: or }) => {
+            if (typeof j == 'number') {
+                return [i, j, or];
+            }
+            else {
+                return [-1, -1, true];
+            }
+        });
+        // console.log(name);
+        // console.log(glueLabels);
+        glueLabels = glueLabels.filter((l) => l[0] >= 0);
+        return Cell2.fromLabels(name, nSides, ...glueLabels);
     }
     /**
      * TODO
@@ -269,15 +342,15 @@ class Cell2 extends Cell {
      * @returns a new cell with fewer subcells
      */
     glue1in2(glued, newCell, newName = this.name) {
-        /* console.log('Start: Trying to glue\n'+
-          glued.toString()+'\n'+
-          'in the cell\n'+
-          this.toString()+'\n'+
-          'with orientations'+'\n'+
-          oriented); */
         // console.log(`Orientations: ${oriented}`);
         const cellList = glued.map((edge) => edge.e);
         const orientationList = glued.map((edge) => edge.or);
+        /* console.log('Start: Trying to glue\n'+
+        cellList.toString()+'\n'+
+          'in the cell\n'+
+          this.toString()+'\n'+
+          'with orientations'+'\n'+
+          orientationList); */
         let output = this.copy();
         let gluedstarts = [];
         let gluedends = [];
