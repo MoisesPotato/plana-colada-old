@@ -378,27 +378,78 @@ describe('It catches mistakes', () => {
         TopSurface_1.Cell2.attachToEdges('Wrong', [A, B], [true, true]);
     });
 });
-describe('Can make from glueing labels', () => {
+describe.only('Can make from glueing labels', () => {
     // it('A square', ()=> {
     //   const square = Cell2.fromLabels('Square', 4,
     //       [1, 3, true], [2, 0, true]);
     //   console.log(square.toString());
     // });
-    it('A Torus', () => {
-        const Torus = TopSurface_1.Cell2.fromString(`aba'b'`, 'T2');
-        const Sphere = TopSurface_1.Cell2.fromString(`aa'`, 'S2');
-        const Klein = TopSurface_1.Cell2.fromString(`abab'`, 'K');
-        const RP2 = TopSurface_1.Cell2.fromString(`abab`, 'RP2');
-        const S = TopSurface_1.Cell2.fromString(`abcc'b'a'`, 'S');
-        const Cyl = TopSurface_1.Cell2.fromString(`aba'c`, 'Cylinder');
-        const Sigma3 = TopSurface_1.Cell2.fromString(`aba'b'cdc'd'efe'f'`, 'Sigma3');
-        console.log(Torus.toString());
-        console.log(Sphere.toString());
-        console.log(Klein.toString());
-        console.log(RP2.toString());
-        console.log(S.toString());
-        console.log(Cyl.toString());
-        console.log(Sigma3.toString());
+    const Torus = TopSurface_1.CW.fromString(`aba'b'`, 'T2');
+    const v1 = Torus.cells0[0];
+    const face = Torus.cells2[0];
+    const a = Torus.cells1[0];
+    const b = Torus.cells1[1];
+    const Sphere = TopSurface_1.CW.fromString(`aa'`, 'S2');
+    const v2 = Sphere.cells0[0];
+    const v3 = Sphere.cells0[1];
+    const c = Sphere.cells1[0];
+    const sphereFace = Sphere.cells2[0];
+    const Klein = TopSurface_1.CW.fromString(`abab'`, 'K');
+    const RP2 = TopSurface_1.CW.fromString(`abab`, 'RP2');
+    const Sphere2 = TopSurface_1.CW.fromString(`abcc'b'a'`, 'S');
+    const Cyl = TopSurface_1.CW.fromString(`aba'c`, 'Cylinder');
+    const cylSide = Cyl.cells2[0];
+    const [cyla, cylb, cylc] = Cyl.cells1;
+    const Sigma3 = TopSurface_1.CW.fromString(`aba'b'cdc'd'efe'f'`, 'Sigma3');
+    it('Euler characteristics', () => {
+        expect(Torus.euler).toBe(0);
+        expect(Sphere.euler).toBe(2);
+        expect(Klein.euler).toBe(0);
+        expect(RP2.euler).toBe(1);
+        expect(Sphere2.euler).toBe(2);
+        expect(Cyl.euler).toBe(0);
+        expect(Sigma3.euler).toBe(-4);
+    });
+    it('finds next edge', () => {
+        expect(face.nextEdge(v1, 0, true)).toEqual([-1, true]);
+        expect(face.nextEdge(v1, 0, false)).toEqual([1, true]);
+        expect(face.nextEdge(v1, 1, true)).toEqual([0, false]);
+        expect(face.nextEdge(v1, 1, false)).toEqual([2, false]);
+        expect(face.nextEdge(v1, 2, true)).toEqual([3, false]);
+        expect(face.nextEdge(v1, 2, false)).toEqual([1, false]);
+        expect(face.nextEdge(v1, 3, true)).toEqual([4, true]);
+        expect(face.nextEdge(v1, 3, false)).toEqual([2, true]);
+        expect(sphereFace.nextEdge(v2, 0, true)).toEqual([-1, true]);
+        expect(sphereFace.nextEdge(v2, 1, true)).toEqual([2, true]);
+        expect(sphereFace.nextEdge(v3, 0, false)).toEqual([1, false]);
+        expect(sphereFace.nextEdge(v3, 1, false)).toEqual([0, false]);
+        expect(Cyl.edgeFaces(cyla)).toEqual([
+            true,
+            true,
+            { face: cylSide, index: 0 },
+            { face: cylSide, index: 2 },
+        ]);
+        expect(Cyl.edgeFaces(cylb)).toEqual([
+            false,
+            true,
+            { face: cylSide, index: 1 },
+            undefined,
+        ]);
+        expect(Cyl.edgeFaces(cylc)).toEqual([
+            false,
+            true,
+            { face: cylSide, index: 3 },
+            undefined,
+        ]);
+    });
+    it('finds faces attached to an edge', () => {
+        expect(Torus.edgeFaces(a)).toEqual([true, true,
+            { face: face, index: 0 }, { face: face, index: 2 }]);
+        expect(Torus.edgeFaces(b)).toEqual([true, true,
+            { face: face, index: 1 }, { face: face, index: 3 }]);
+        expect(Sphere.edgeFaces(c)).toEqual([true, true,
+            { face: sphereFace, index: 0 }, { face: sphereFace, index: 1 },
+        ]);
     });
 });
 // describe(('Surfaces '), () =>{

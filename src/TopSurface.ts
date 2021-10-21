@@ -4,11 +4,20 @@
 // eslint-disable-next-line no-unused-vars
 import {string} from 'mathjs';
 
+type edgeOf = {face:Cell2, index:number};
+
 /**
  * @property {Cell2[]} cells2
+ * @property {Cell1[]} cells1
+ * @property {Cell0[]} cells0
  */
 export class CW {
   cells2:Cell2[];
+  cells1:Cell1[];
+  cells0:Cell0[];
+  edgeToFaces:[edgeOf, edgeOf|undefined][];
+  isManifold:boolean;
+  isMfldWBoundary: boolean;
 
   /**
  *
@@ -16,6 +25,156 @@ export class CW {
  */
   constructor(cells2: Cell2[]) {
     this.cells2 = cells2;
+    const cells1Together = cells2.map((c) => c.cells1);
+    const cells0Together = cells2.map((c) => c.cells0);
+    this.cells1 = Cell.mergeLists(cells1Together) as Cell1[];
+    this.cells0 = Cell.mergeLists(cells0Together) as Cell0[];
+    this.isManifold = true;
+    this.isMfldWBoundary =true;
+    this.edgeToFaces = this.cells1.map((e) =>{
+      const [mfldCompatible,
+        mfldWithBoundary,
+        face1,
+        face2] = this.edgeFaces(e);
+      this.isManifold = this.isManifold && mfldCompatible;
+      this.isMfldWBoundary = this.isMfldWBoundary && mfldWithBoundary;
+      return [face1, face2];
+    });
+  }
+
+  /**
+   * @returns the Euler characteristic
+   */
+  get euler():number {
+    return this.cells0.length - this.cells1.length + this.cells2.length;
+  }
+
+  /**
+ * @param labels a string such as aba'b'.
+ * Apostrophes are used for opposite glueing
+ * @param name optional name
+ * @returns a surface from the labellin.
+ * For example aba'b' gives a torus
+ */
+  static fromString(labels:string, name?:string):CW {
+    return new CW([Cell2.fromString(labels, name)]);
+  }
+
+  // /**
+  //  * @returns [isItASurface, isItASurfaceWithBoundary]
+  //  */
+  // get isManifold():[boolean, boolean] {
+
+  // }
+
+  /**
+   *TODO
+   * @param v a vertex
+   * @returns tells us if this vertex is surrounded
+   * by a circle, or by a half-circle
+   */
+  edgesOnVertex(v:Cell0):void {
+    const edges = [] as [number, boolean][];
+    this.cells1.forEach((e, i) =>{
+      if (e.start().equals(v)) {
+        edges.push([i, true]);
+      }
+      if (e.end().equals(v)) {
+        edges.push([i, false]);
+      }
+    });
+    const edgesInLoop = edges.map(() => false);
+    // this array is going to put ``edges'' in order
+    const edgeOrder = [0];
+    edgesInLoop[0] = true;
+    const currentCell = this.edgeToFaces[edges[0][0]][0];
+    const movingForward = true;
+    const currentIndex = 0;
+    let circledAround = false;
+    const areWeDone = false;
+    edges.forEach((e, i) => {
+      if (!areWeDone) {
+        const [nextIndex, nextStart] = currentCell
+            .face.nextEdge(v, currentCell.index, edges[currentIndex][1]);
+        // Did we see this edge already?
+        if (edgesInLoop[nextIndex]) {
+          circledAround = true;
+          const weCoveredAllEdges = edgesInLoop
+              .reduce((prev, curr) => prev && curr,
+                  true );
+          if (!weCoveredAllEdges) {
+            throw new Error('There is more than one loop in this vertex');
+          }
+        }
+        // find this index in our list
+        let foundIndex= -1;
+        edges.forEach((e, index) => {
+          if ((e[0] == nextIndex) && (e[1] == nextStart)) {
+            foundIndex = index;
+          }
+        });
+        // did we loop around yet?
+        if (edgeOrder.includes(foundIndex)) {
+          circledAround = true;
+          if (true) {
+
+          }
+        }
+
+
+        if (movingForward) {
+
+        }
+      }
+    });
+  }
+
+  /**
+   *
+   * @param edge an edge
+   * @returns Is this compatible with a manifold? answer[0]
+   * With boundary? answer[1]
+   * Face #1 {face: the cell, index:when it appears}
+   * Face #2 (maybe)
+   */
+  edgeFaces(edge:Cell1): [boolean, boolean, edgeOf, edgeOf|undefined] {
+    let faceCounter = 0;
+    let face1 = undefined as undefined|{face:Cell2, index:number};
+    let face2 = undefined as undefined|{face:Cell2, index:number};
+    let mfldCompatible = false;
+    let mfldWithBoundary = false;
+    this.cells2.forEach((f)=> {
+      f.attachingMap.targets.forEach((e, i) => {
+        if (edge.equals(e)) {
+          if (faceCounter == 0) {
+            face1 = {
+              face: f,
+              index: i,
+            };
+            faceCounter++;
+            mfldWithBoundary = true;// at least one face
+          } else if (faceCounter == 1) {
+            face2 = {
+              face: f,
+              index: i,
+            };
+            faceCounter++;
+            mfldCompatible = true;// at least two faces
+          } else {// two many faces
+            mfldWithBoundary = false;
+            mfldCompatible = false;
+          }
+        }
+      });
+    });
+    if (typeof face1 == 'undefined') {
+      throw new Error('Edge is no one\'s edge. How did we get here?');
+    }
+    if (face2) {
+      return [mfldCompatible, mfldWithBoundary, face1, face2];
+    } else {
+      return [mfldCompatible, mfldWithBoundary, face1, undefined];
+    }
   }
 }
 
@@ -197,6 +356,43 @@ export class Cell2 extends Cell {
     }
   }
 
+  /**
+   *
+   * @param v a vertex
+   * @param edgeIndex the index of the edge in the ordering
+   * @param start is the vertex the start? (or the end?)
+   * @returns [next edge, start of next edge or end]
+   */
+  nextEdge(v:Cell0, edgeIndex:number, start:boolean):[number, boolean] {
+    if (!this.edge(edgeIndex).e.start(start).equals(v)) {
+      throw new Error('This is not a vertex of the right edge:\n'+
+      `Vertex: ${v.toString}
+      Index: ${edgeIndex}
+      Edge: ${this.edge(edgeIndex).e}
+      ${start? 'start':'end'}`);
+    }
+    // Decide if we are taking the next or previous edge in the order
+    const chooseNext = !(this.edge(edgeIndex).or == start);
+    let newIndex:number;
+    if (chooseNext) {
+      newIndex =edgeIndex + 1;
+    } else {
+      newIndex =edgeIndex - 1;
+    }
+    const {e: newEdge, or: newOrient} = this.edge(newIndex);
+    /* console.log(`${newOrient? 'Forward':'Backwards'}`); */
+    if (!newEdge.hasVertex(v)) {
+      const [, message] = this.isValid();
+      throw new Error('Bad polygon:\n'+message);
+    }
+    // Decide if we want the start or end of the other edge
+    const newStart = (chooseNext == newOrient);
+    /* console.log(`We are moving ${chooseNext? 'forward':
+  'backwards'}, and the new edge is ${newOrient? 'forward':
+  'backwards'}, so we are going with the ${newStart?'start':'end'}`); */
+    return [newIndex, newStart];
+  }
+
   /** TODO
    * @returns is this a valid 2-cell and the reason why not
    */
@@ -224,10 +420,16 @@ export class Cell2 extends Cell {
     return [true, ''];
   }
   /**
-   * @param i index
+   * @param i index. Could be at most -(nEdges)
    * @returns e:ith edge, or:glueing side
  */
   edge(i:number):edge {
+    const n = this.attachingMap.targets.length;
+    if (i < 0) {
+      i = n + i;
+    } else if (i >= n) {
+      i = i % n;
+    }
     return {e: this.attachingMap.targets[i],
       or: this.attachingMap.oriented[i]};
   }
@@ -554,6 +756,14 @@ export class Cell1 extends Cell {
       return [false, 'Invalid attaching map:\n'+this.attachingMap.isValid()[1]];
     }
     return [true, ''];
+  }
+  /**
+ *
+ * @param v a 0 cell
+ * @returns true if this is one of its vertices
+ */
+  hasVertex(v:Cell0):boolean {
+    return (v.equals(this.start()) ||v.equals(this.end()));
   }
 
   /**
