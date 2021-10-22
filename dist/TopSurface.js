@@ -7,6 +7,33 @@ exports.Attach = exports.Cell0 = exports.Cell1 = exports.Cell2 = exports.Cell = 
  * @property {Cell2[]} cells2
  * @property {Cell1[]} cells1
  * @property {Cell0[]} cells0
+ * Every other property uses numbers to point
+ * to these three arrays
+ * @property { {start:number, end:number}[] } edgeToVertices
+ * for every edge i edgeToVertices[i].start is the index of the
+ * start resp. the end
+ * @property {[edgeOf, edgeOf][]} edgeToFaces
+ * for every edge i, edgeToFaces[i][0].face is the face index,
+ * edgeToFaces, edgeToFaces[i][0].index is the index of this edge
+ * in this face, and edgeToFaces[i][0].forward tells us which way it's glued
+ * The second one might be undefined
+ * @property {Array<{index:number, forward:boolean}[]>}faceToEdges
+ * for each face, we get in order
+ * the index of its edges and the way they are glued
+ * @property {Array<{index:number}[]>} faceToVertices:;
+ * for each face, the vertices:
+ * starting with the start (or end if it's backwards)
+ * of edge 0
+ * @property {Array<{index:number, start: boolean}[]>} vertexToEdges
+ * for each vertex, the ordered list of its edges and the data
+ * of where it's at the start
+ * @property {boolean[]} boundaryVertex
+ * for each vertex, this is true if it doesn't have a whole disk around it
+ * @property {{index:number, forward:boolean}[]} vertexToFaces
+ * for each vertex, the list of faces it's attached to, and whether
+ * the ordering of
+ * @property {boolean} isManifold:;
+ * @property {boolean} isMfldWBoundary: ;
  */
 class CW {
     /**
@@ -21,12 +48,38 @@ class CW {
         this.cells0 = Cell.mergeLists(cells0Together);
         this.isManifold = true;
         this.isMfldWBoundary = true;
+        this.edgeToVertices = this.cells1.map((e) => {
+            return { start: this.findCell(e.start()),
+                end: this.findCell(e.end()),
+            };
+        });
         this.edgeToFaces = this.cells1.map((e) => {
             const [mfldCompatible, mfldWithBoundary, face1, face2] = this.edgeFaces(e);
             this.isManifold = this.isManifold && mfldCompatible;
-            this.isMfldWBoundary = this.isMfldWBoundary && mfldWithBoundary;
+            if (!mfldWithBoundary) {
+                throw new Error(`Edge ${e} has the wrong number of faces`);
+            }
             return [face1, face2];
         });
+        this.faceToEdges = this.cells2.map((f, i) => this.getEdgesInFace(i));
+        this.faceToVertices = this.cells2.map((f, i) => this.getVerticesInFace(i));
+    }
+    /**
+     *
+     * @param c a celll
+     * @returns the index n, i.e. this.cellsD[n] = c
+     */
+    findCell(c) {
+        if (c instanceof Cell0) {
+            return Cell.findByName(c.name, this.cells0);
+        }
+        if (c instanceof Cell1) {
+            return Cell.findByName(c.name, this.cells1);
+        }
+        if (c instanceof Cell2) {
+            return Cell.findByName(c.name, this.cells2);
+        }
+        throw new Error('How did we get here???');
     }
     /**
      * @returns the Euler characteristic
@@ -44,6 +97,36 @@ class CW {
     static fromString(labels, name) {
         return new CW([Cell2.fromString(labels, name)]);
     }
+    /**
+     *
+     * @param faceIndex the index of a face
+     * @returns the list of edges and the way they are glued
+     */
+    getEdgesInFace(faceIndex) {
+        const face = this.cells2[faceIndex];
+        const edgeList = face.attachingMap.targets.map((e, j) => {
+            const edgeIndex = this.findCell(e);
+            const forward = face.edge(j).or;
+            return { index: edgeIndex, forward: forward };
+        });
+        return edgeList;
+    }
+    /**
+     *
+     * @param faceIndex the index of a face
+     * @returns the list of edges and the way they are glued
+     */
+    getVerticesInFace(faceIndex) {
+        const vertexList = this.faceToEdges[faceIndex].map(({ index: e, forward: or }, j) => {
+            if (or) {
+                return this.edgeToVertices[e].start;
+            }
+            else {
+                return this.edgeToVertices[e].end;
+            }
+        });
+        return vertexList;
+    }
     // /**
     //  * @returns [isItASurface, isItASurfaceWithBoundary]
     //  */
@@ -51,59 +134,82 @@ class CW {
     // }
     /**
      *TODO
-     * @param v a vertex
+     * @param v a vertex number
      * @returns tells us if this vertex is surrounded
      * by a circle, or by a half-circle
      */
-    edgesOnVertex(v) {
+    vertexNbhd(v) {
+        // const unOrderedEdges = this.edgesContainingAVertex(v);
+    }
+    /**
+    *
+    * @param v a vertex
+    * @returns a list with no order (inherited from this.Cells1)
+    * of all the edges that contain this vertex, twice if they are
+    * the start and end. If this.cells1[i] has the vertex, the array contains
+    * {index:i, start:(false if it's the end)}
+    */
+    edgesContainingAVertex(v) {
         const edges = [];
         this.cells1.forEach((e, i) => {
-            if (e.start().equals(v)) {
-                edges.push([i, true]);
+            if (v == this.edgeToVertices[i].start) {
+                edges.push({ index: i, start: true });
             }
-            if (e.end().equals(v)) {
-                edges.push([i, false]);
-            }
-        });
-        const edgesInLoop = edges.map(() => false);
-        // this array is going to put ``edges'' in order
-        const edgeOrder = [0];
-        edgesInLoop[0] = true;
-        const currentCell = this.edgeToFaces[edges[0][0]][0];
-        const movingForward = true;
-        const currentIndex = 0;
-        let circledAround = false;
-        const areWeDone = false;
-        edges.forEach((e, i) => {
-            if (!areWeDone) {
-                const [nextIndex, nextStart] = currentCell
-                    .face.nextEdge(v, currentCell.index, edges[currentIndex][1]);
-                // Did we see this edge already?
-                if (edgesInLoop[nextIndex]) {
-                    circledAround = true;
-                    const weCoveredAllEdges = edgesInLoop
-                        .reduce((prev, curr) => prev && curr, true);
-                    if (!weCoveredAllEdges) {
-                        throw new Error('There is more than one loop in this vertex');
-                    }
-                }
-                // find this index in our list
-                let foundIndex = -1;
-                edges.forEach((e, index) => {
-                    if ((e[0] == nextIndex) && (e[1] == nextStart)) {
-                        foundIndex = index;
-                    }
-                });
-                // did we loop around yet?
-                if (edgeOrder.includes(foundIndex)) {
-                    circledAround = true;
-                    if (true) {
-                    }
-                }
-                if (movingForward) {
-                }
+            if (v == this.edgeToVertices[i].end) {
+                edges.push({ index: i, start: false });
             }
         });
+        return edges;
+    }
+    /**
+     * @param v a vertex
+     * @param edges The output of {@link edgesContainingAVertex}
+     * A list of indices and start/end {index:number, start:boolean}
+     * @returns [indices of the connected edges][]
+     */
+    findLinksBetweenEdges(v, edges) {
+        const linkData = edges.map(() => []);
+        const lastIndexUsed = 1;
+        const lastEdge = edges.forEach(({ index: index, start: start }, i) => {
+            const faces = this.edgeToFaces[index];
+            const useIndex = lastIndexUsed == 0 ? 1 : 0;
+            const nextEdge = this.nextEdge(v, lastEdge.forward);
+            const { face: face1, index: edgeIndex } = faces[0];
+            const gluedForward = face1.edge(edgeIndex).or;
+            const doWeWantNextEdge = !(start == gluedForward);
+            const newEdgeIndex = doWeWantNextEdge ? edgeIndex + 1 : edgeIndex - 1;
+            const newStart = (face1.edge(newEdgeIndex).or == doWeWantNextEdge);
+            let newEdgeIndex2 = undefined;
+            let newStart2 = undefined;
+            if (faces[1]) {
+                const { face: face2, index: edgeIndex2 } = faces[1];
+                const gluedForward2 = face2.edge(edgeIndex2).or;
+                const doWeWantNextEdge2 = !(start == gluedForward2);
+                newEdgeIndex2 = doWeWantNextEdge2 ? edgeIndex2 + 1 : edgeIndex2 - 1;
+                newStart2 = (face2.edge(newEdgeIndex2).or == doWeWantNextEdge2);
+            }
+        });
+        return linkData;
+    }
+    /**
+     *
+     * @param v a vertex
+     * @param start is the vertex the start of its edge
+     * @param face a 2-cell containing this vertex
+     * @param i the edge of this 2-cell that contains the vertex
+     * @returns [the index of the 1-cell that is neighboring in this cell,
+     * true if the vertex is the start
+     * ]
+     */
+    nextEdge(v, start, { face: f, index: i }) {
+        const edgeList = this.faceToEdges[f];
+        const gluedForward = edgeList[i].forward;
+        const doWeWantNextEdge = !(start == gluedForward);
+        let newi = doWeWantNextEdge ? i + 1 : i - 1;
+        newi = newi < 0 ? edgeList.length : newi;
+        newi = newi >= edgeList.length ? 0 : newi;
+        const newStart = (edgeList[newi].forward == doWeWantNextEdge);
+        return [edgeList[newi].index, newStart];
     }
     /**
      *
@@ -119,21 +225,23 @@ class CW {
         let face2 = undefined;
         let mfldCompatible = false;
         let mfldWithBoundary = false;
-        this.cells2.forEach((f) => {
+        this.cells2.forEach((f, faceIndex) => {
             f.attachingMap.targets.forEach((e, i) => {
                 if (edge.equals(e)) {
                     if (faceCounter == 0) {
                         face1 = {
-                            face: f,
+                            face: faceIndex,
                             index: i,
+                            forward: f.edge(i).or,
                         };
                         faceCounter++;
                         mfldWithBoundary = true; // at least one face
                     }
                     else if (faceCounter == 1) {
                         face2 = {
-                            face: f,
+                            face: faceIndex,
                             index: i,
+                            forward: f.edge(i).or,
                         };
                         faceCounter++;
                         mfldCompatible = true; // at least two faces
@@ -199,6 +307,21 @@ class Cell {
             return false;
         }
         return true;
+    }
+    /**
+     *
+     * @param name name of a cell
+     * @param list array of cells
+     * @returns the last index at which this name appears in the array
+     */
+    static findByName(name, list) {
+        let found = -1;
+        list.forEach((c, i) => {
+            if (c.name === name) {
+                found = i;
+            }
+        });
+        return found;
     }
     /**
    *

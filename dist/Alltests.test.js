@@ -451,6 +451,22 @@ describe.only('Can make from glueing labels', () => {
             { face: sphereFace, index: 0 }, { face: sphereFace, index: 1 },
         ]);
     });
+    it('Finds set of edges containing a vertex', () => {
+        expect(Torus.edgesContainingAVertex(v1)).toEqual([
+            { index: 0, start: true },
+            { index: 0, start: false },
+            { index: 1, start: true },
+            { index: 1, start: false },
+        ]);
+        expect(RP2.edgesContainingAVertex(RP2.cells0[0])).toEqual([
+            { index: 0, start: true },
+            { index: 1, start: false },
+        ]);
+        expect(RP2.edgesContainingAVertex(RP2.cells0[1])).toEqual([
+            { index: 0, start: false },
+            { index: 1, start: true },
+        ]);
+    });
 });
 // describe(('Surfaces '), () =>{
 //   // let S;
