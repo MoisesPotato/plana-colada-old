@@ -27,7 +27,7 @@ exports.Attach = exports.Cell0 = exports.Cell1 = exports.Cell2 = exports.Cell = 
  * @property {Array<{index:number, start: boolean}[]>} vertexToEdges
  * for each vertex, the ordered list of its edges and the data
  * of where it's at the start
- * @property {boolean[]} boundaryVertex
+ * @property {boolean[]} verticesInBoundary
  * for each vertex, this is true if it doesn't have a whole disk around it
  * @property {{index:number, forward:boolean}[]} vertexToFaces
  * for each vertex, the list of faces it's attached to, and whether
@@ -49,20 +49,32 @@ class CW {
         this.isManifold = true;
         this.isMfldWBoundary = true;
         this.edgeToVertices = this.cells1.map((e) => {
+            /* console.log(
+                `Edge ${e.toString()}
+      has start ${e.start()} (${this.findCell(e.start())})
+      and end ${e.end()} (${this.findCell(e.end())})`,
+            ); */
             return { start: this.findCell(e.start()),
                 end: this.findCell(e.end()),
             };
         });
-        this.edgeToFaces = this.cells1.map((e) => {
-            const [mfldCompatible, mfldWithBoundary, face1, face2] = this.edgeFaces(e);
+        /*  console.log(`Edgesdata:
+    ${JSON.stringify(this.edgeToVertices)}`); */
+        this.edgeToFaces = this.cells1.map((e, i) => {
+            const [mfldCompatible, mfldWithBoundary, face1, face2] = this.edgeFaces(i);
             this.isManifold = this.isManifold && mfldCompatible;
             if (!mfldWithBoundary) {
                 throw new Error(`Edge ${e} has the wrong number of faces`);
             }
             return [face1, face2];
         });
+        /* console.log(`Each edge belongs to these faces:
+    ${JSON.stringify(this.edgeToFaces)}`); */
         this.faceToEdges = this.cells2.map((f, i) => this.getEdgesInFace(i));
         this.faceToVertices = this.cells2.map((f, i) => this.getVerticesInFace(i));
+        const vertexFans = this.cells0.map((c, j) => this.vertexNbhd(j));
+        this.vertexToEdges = vertexFans.map((a) => a[0]);
+        this.verticesInBoundary = vertexFans.map((a) => a[1]);
     }
     /**
      *
@@ -104,11 +116,19 @@ class CW {
      */
     getEdgesInFace(faceIndex) {
         const face = this.cells2[faceIndex];
-        const edgeList = face.attachingMap.targets.map((e, j) => {
+        const edgeList = face
+            .attachingMap.targets.map((e, j) => {
             const edgeIndex = this.findCell(e);
             const forward = face.edge(j).or;
+            // console.log(`Edge number ${j} is
+            // ${e}
+            // which appears with index ${edgeIndex} in the list.
+            // It is oriented ${face.edge(j).or?'forward':'backwards'}.
+            // So we will return index: ${edgeIndex} forward: ${forward}}
+            // `);
             return { index: edgeIndex, forward: forward };
         });
+        // console.log(edgeList);
         return edgeList;
     }
     /**
@@ -135,11 +155,112 @@ class CW {
     /**
      *TODO
      * @param v a vertex number
-     * @returns tells us if this vertex is surrounded
-     * by a circle, or by a half-circle
+     * @returns the list of edges in order and if the vertex is on the boundary
      */
     vertexNbhd(v) {
-        // const unOrderedEdges = this.edgesContainingAVertex(v);
+        const unOrderedEdges = this.edgesContainingAVertex(v);
+        const { links: linkData, boundaries: boundaries } = this
+            .findLinksBetweenEdges(v, unOrderedEdges);
+        let currentIndex = 0;
+        let onBoundary = false;
+        if (boundaries.length >= 2) {
+            currentIndex = boundaries[0];
+            onBoundary = true;
+        }
+        let { index: currentEdge, start: currentStart } = unOrderedEdges[currentIndex];
+        const orderedEdges = [unOrderedEdges[currentIndex]];
+        let previousLink = 1;
+        let newIndex = currentIndex;
+        /* console.log(`Link data:
+        ${JSON.stringify(linkData)}`); */
+        unOrderedEdges.forEach(({ index: i }, iteration) => {
+            // We want to run the loop one less time than the number of edges
+            // since we have already included one thing in the array
+            /* console.log(`Previous link: ${previousLink}`);
+            console.log('\x1b[36m%s\x1b[0m', `i = ${iteration},
+            and we stop if we reach ${unOrderedEdges.length}`); */
+            if (iteration < unOrderedEdges.length - 1) {
+                /* console.log(
+                    `We are currently on edge ${newIndex} of the list,
+        The list:
+        ${JSON.stringify(unOrderedEdges)},
+        so far we have found
+        ${JSON.stringify(orderedEdges)}
+        the last connection we used was ${previousLink}`,
+                );
+                console.log(`The last edge we looked at was:
+        edge ${currentEdge} at the ${currentStart?'start':'end'}`); */
+                const oldEdge = currentEdge;
+                const oldStart = currentStart;
+                // the new edge in the list
+                ({ index: currentEdge, start: currentStart } =
+                    linkData[newIndex][1 - previousLink]);
+                /* console.log(`Following the connection we find
+        edge ${currentEdge} at the ${currentStart?'start':'end'}`); */
+                // find it it the list of unordered edges
+                newIndex = -1;
+                unOrderedEdges.forEach(({ index: i, start: s }, j) => {
+                    if ((i == currentEdge) && (s == currentStart)) {
+                        newIndex = j;
+                    }
+                });
+                /* console.log(`This new edge is found at position ${newIndex}
+        in the unordered list
+        ${JSON.stringify(unOrderedEdges)}
+                `); */
+                // If we didn't find it something went wrong
+                if (newIndex == -1) {
+                    let unOrderedString = '';
+                    unOrderedEdges.forEach(({ index: i, start: s }) => {
+                        unOrderedString = unOrderedString +
+                            '\n' + `Index: ${i}, ${s ? 'start' : 'end'}.`;
+                    });
+                    let orderedString = '';
+                    orderedEdges.forEach(({ index: i, start: s }) => {
+                        orderedString = orderedString +
+                            '\n' + `Index: ${i}, ${s ? 'start' : 'end'}.`;
+                    });
+                    let linkString = '';
+                    linkData.forEach(([{ index: i, start: s }, otherEdge], j) => {
+                        linkString = linkString +
+                            `
+            Edge ${j} links to
+            Index: ${i} at ${s ? 'start' : 'end'}
+            ${otherEdge ? `and
+            Index: ${otherEdge.index} at ${otherEdge.start ? 'start' : 'end'}
+            ` : ''}
+            `;
+                    });
+                    throw new Error(`Cone over vertex ${v} ` +
+                        `has too many connected components
+        Edges around this vertex are
+        ${unOrderedString}
+        Currently ordered edges are
+        ${orderedString}
+        Link info is
+        ${linkString}
+        Was looking for the edge ${currentEdge}
+        at the ${currentStart ? 'start' : 'end'} ` +
+                        `but couldn't find it
+        `);
+                }
+                // If we found it, add the new edge to the list
+                orderedEdges.push(unOrderedEdges[newIndex]);
+                // Which link did we come in through, 0 or 1?
+                const isItFirst = ((oldEdge == linkData[newIndex][0].index) &&
+                    (oldStart == linkData[newIndex][0].start));
+                if (isItFirst) {
+                    previousLink = 0;
+                }
+                else {
+                    previousLink = 1;
+                }
+                /* console.log(`Based on the data
+        ${JSON.stringify(linkData)}
+        we came in through connection ${previousLink}`); */
+            }
+        });
+        return [orderedEdges, onBoundary];
     }
     /**
     *
@@ -159,6 +280,11 @@ class CW {
                 edges.push({ index: i, start: false });
             }
         });
+        /* console.log(`
+    These are the endpoints of each edge:
+    ${JSON.stringify(this.edgeToVertices)}
+    The edges containing vertex ${v}
+    are ${JSON.stringify(edges)}`); */
         return edges;
     }
     /**
@@ -168,28 +294,31 @@ class CW {
      * @returns [indices of the connected edges][]
      */
     findLinksBetweenEdges(v, edges) {
-        const linkData = edges.map(() => []);
-        const lastIndexUsed = 1;
-        const lastEdge = edges.forEach(({ index: index, start: start }, i) => {
+        const linkData = [];
+        const boundaries = [];
+        edges.forEach(({ index: index, start: start }, i) => {
             const faces = this.edgeToFaces[index];
-            const useIndex = lastIndexUsed == 0 ? 1 : 0;
-            const nextEdge = this.nextEdge(v, lastEdge.forward);
-            const { face: face1, index: edgeIndex } = faces[0];
-            const gluedForward = face1.edge(edgeIndex).or;
-            const doWeWantNextEdge = !(start == gluedForward);
-            const newEdgeIndex = doWeWantNextEdge ? edgeIndex + 1 : edgeIndex - 1;
-            const newStart = (face1.edge(newEdgeIndex).or == doWeWantNextEdge);
-            let newEdgeIndex2 = undefined;
-            let newStart2 = undefined;
-            if (faces[1]) {
-                const { face: face2, index: edgeIndex2 } = faces[1];
-                const gluedForward2 = face2.edge(edgeIndex2).or;
-                const doWeWantNextEdge2 = !(start == gluedForward2);
-                newEdgeIndex2 = doWeWantNextEdge2 ? edgeIndex2 + 1 : edgeIndex2 - 1;
-                newStart2 = (face2.edge(newEdgeIndex2).or == doWeWantNextEdge2);
+            // console.log('Faces: '+JSON.stringify(faces));
+            const nextEdges = [this.nextEdge(v, start, faces[0])];
+            if (faces[1] !== undefined) {
+                nextEdges.push(this.nextEdge(v, start, faces[1]));
             }
+            else {
+                boundaries.push(i);
+            }
+            // console.log(JSON.stringify(nextEdges));
+            linkData.push(nextEdges);
         });
-        return linkData;
+        if (boundaries.length > 2) {
+            throw new Error('This vertex has too many boundary edges');
+        }
+        /* console.log(`We want to find the links of vertex ${v}
+        The unordered list of edges it belongs to is
+        ${JSON.stringify(edges)}
+        The link data is this:
+        ${JSON.stringify(linkData)}
+        `); */
+        return { links: linkData, boundaries: boundaries };
     }
     /**
      *
@@ -206,20 +335,30 @@ class CW {
         const gluedForward = edgeList[i].forward;
         const doWeWantNextEdge = !(start == gluedForward);
         let newi = doWeWantNextEdge ? i + 1 : i - 1;
-        newi = newi < 0 ? edgeList.length : newi;
-        newi = newi >= edgeList.length ? 0 : newi;
+        newi = newi < 0 ? edgeList.length - 1 : newi;
+        newi = (newi >= edgeList.length) ? 0 : newi;
         const newStart = (edgeList[newi].forward == doWeWantNextEdge);
-        return [edgeList[newi].index, newStart];
+        /* console.log(
+            `Vertex ${v} as the ${start?'start':'end'} `+
+          `of the ${i}th edge of face ${f}:
+          This edge is glued ${gluedForward?'forward':'backwards'},
+          so we want the ${doWeWantNextEdge?'next':'previous'} edge, ${newi}
+          We choose the ${newStart?'start':'end'} of edge ${newi},
+          which is the ${edgeList[newi].index} edge on the list
+          `,
+        ); */
+        return { index: edgeList[newi].index, start: newStart };
     }
     /**
      *
-     * @param edge an edge
+     * @param n an edge index
      * @returns Is this compatible with a manifold? answer[0]
      * With boundary? answer[1]
      * Face #1 {face: the cell, index:when it appears}
      * Face #2 (maybe)
      */
-    edgeFaces(edge) {
+    edgeFaces(n) {
+        const edge = this.cells1[n];
         let faceCounter = 0;
         let face1 = undefined;
         let face2 = undefined;
@@ -256,6 +395,13 @@ class CW {
         if (typeof face1 == 'undefined') {
             throw new Error('Edge is no one\'s edge. How did we get here?');
         }
+        /* console.log(
+            `Edge ${n} is
+    the ${face1.index}th edge in face ${face1.face},`+
+    `glued ${face1.forward?'forward':'backward'}
+    ${face2?`and the ${face2.index}th edge in face ${face2.face},`+
+    `glued ${face2.forward?'forward':'backward'}`:''}
+    `); */
         if (face2) {
             return [mfldCompatible, mfldWithBoundary, face1, face2];
         }

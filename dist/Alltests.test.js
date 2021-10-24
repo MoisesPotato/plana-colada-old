@@ -384,23 +384,25 @@ describe.only('Can make from glueing labels', () => {
     //       [1, 3, true], [2, 0, true]);
     //   console.log(square.toString());
     // });
-    const Torus = TopSurface_1.CW.fromString(`aba'b'`, 'T2');
-    const v1 = Torus.cells0[0];
-    const face = Torus.cells2[0];
-    const a = Torus.cells1[0];
-    const b = Torus.cells1[1];
+    // console.log('\x1b[31m', 'Trying to make RP2');
+    const RP2 = TopSurface_1.CW.fromString(`abab`, 'RP2');
+    // console.log('\x1b[31m', 'Trying to make sphere');
     const Sphere = TopSurface_1.CW.fromString(`aa'`, 'S2');
     const v2 = Sphere.cells0[0];
     const v3 = Sphere.cells0[1];
-    const c = Sphere.cells1[0];
     const sphereFace = Sphere.cells2[0];
+    // console.log('\x1b[31m', 'Trying to make Klein bottle');
     const Klein = TopSurface_1.CW.fromString(`abab'`, 'K');
-    const RP2 = TopSurface_1.CW.fromString(`abab`, 'RP2');
+    // console.log('\x1b[31m', 'Trying to make sphere from hexagon');
     const Sphere2 = TopSurface_1.CW.fromString(`abcc'b'a'`, 'S');
+    // console.log('\x1b[31m', 'Trying to make cylinder');
     const Cyl = TopSurface_1.CW.fromString(`aba'c`, 'Cylinder');
-    const cylSide = Cyl.cells2[0];
-    const [cyla, cylb, cylc] = Cyl.cells1;
+    // console.log('\x1b[31m', 'Trying to make genus 3 surface');
     const Sigma3 = TopSurface_1.CW.fromString(`aba'b'cdc'd'efe'f'`, 'Sigma3');
+    // console.log('\x1b[31m', 'Trying to make torus');
+    const Torus = TopSurface_1.CW.fromString(`aba'b'`, 'T2');
+    const v1 = Torus.cells0[0];
+    const face = Torus.cells2[0];
     it('Euler characteristics', () => {
         expect(Torus.euler).toBe(0);
         expect(Sphere.euler).toBe(2);
@@ -410,61 +412,164 @@ describe.only('Can make from glueing labels', () => {
         expect(Cyl.euler).toBe(0);
         expect(Sigma3.euler).toBe(-4);
     });
-    it('finds next edge', () => {
-        expect(face.nextEdge(v1, 0, true)).toEqual([-1, true]);
-        expect(face.nextEdge(v1, 0, false)).toEqual([1, true]);
-        expect(face.nextEdge(v1, 1, true)).toEqual([0, false]);
-        expect(face.nextEdge(v1, 1, false)).toEqual([2, false]);
-        expect(face.nextEdge(v1, 2, true)).toEqual([3, false]);
-        expect(face.nextEdge(v1, 2, false)).toEqual([1, false]);
-        expect(face.nextEdge(v1, 3, true)).toEqual([4, true]);
-        expect(face.nextEdge(v1, 3, false)).toEqual([2, true]);
-        expect(sphereFace.nextEdge(v2, 0, true)).toEqual([-1, true]);
-        expect(sphereFace.nextEdge(v2, 1, true)).toEqual([2, true]);
-        expect(sphereFace.nextEdge(v3, 0, false)).toEqual([1, false]);
-        expect(sphereFace.nextEdge(v3, 1, false)).toEqual([0, false]);
-        expect(Cyl.edgeFaces(cyla)).toEqual([
-            true,
-            true,
-            { face: cylSide, index: 0 },
-            { face: cylSide, index: 2 },
+    it('finds edge vertices', () => {
+        expect(Torus.edgeToVertices).toEqual([
+            { start: 0, end: 0 },
+            { start: 0, end: 0 },
         ]);
-        expect(Cyl.edgeFaces(cylb)).toEqual([
+        expect(Sphere.edgeToVertices).toEqual([
+            { start: 0, end: 1 },
+        ]);
+        expect(Cyl.edgeToVertices).toEqual([
+            { start: 0, end: 1 },
+            { start: 1, end: 1 },
+            { start: 0, end: 0 },
+        ]);
+    });
+    it('finds edges on a face', () => {
+        expect(Torus.faceToEdges[0]).toEqual([
+            { index: 0, forward: true },
+            { index: 1, forward: true },
+            { index: 0, forward: false },
+            { index: 1, forward: false },
+        ]);
+    });
+    it('finds vertices on a face', () => {
+        expect(Torus.faceToVertices[0]).toEqual([0, 0, 0, 0]);
+    });
+    it('finds next edge', () => {
+        expect(face.nextEdge(v1, 0, true))
+            .toEqual([-1, true]);
+        expect(face.nextEdge(v1, 0, false))
+            .toEqual([1, true]);
+        expect(face.nextEdge(v1, 1, true))
+            .toEqual([0, false]);
+        expect(face.nextEdge(v1, 1, false))
+            .toEqual([2, false]);
+        expect(face.nextEdge(v1, 2, true))
+            .toEqual([3, false]);
+        expect(face.nextEdge(v1, 2, false))
+            .toEqual([1, false]);
+        expect(face.nextEdge(v1, 3, true))
+            .toEqual([4, true]);
+        expect(face.nextEdge(v1, 3, false))
+            .toEqual([2, true]);
+        expect(sphereFace.nextEdge(v2, 0, true))
+            .toEqual([-1, true]);
+        expect(sphereFace.nextEdge(v2, 1, true))
+            .toEqual([2, true]);
+        expect(sphereFace.nextEdge(v3, 0, false))
+            .toEqual([1, false]);
+        expect(sphereFace.nextEdge(v3, 1, false))
+            .toEqual([0, false]);
+        expect(Cyl.edgeFaces(0)).toEqual([
+            true,
+            true,
+            { face: 0, forward: true, index: 0 },
+            { face: 0, forward: false, index: 2 },
+        ]);
+        expect(Cyl.edgeFaces(1)).toEqual([
             false,
             true,
-            { face: cylSide, index: 1 },
+            { face: 0, forward: true, index: 1 },
             undefined,
         ]);
-        expect(Cyl.edgeFaces(cylc)).toEqual([
+        expect(Cyl.edgeFaces(2)).toEqual([
             false,
             true,
-            { face: cylSide, index: 3 },
+            { face: 0, forward: true, index: 3 },
             undefined,
         ]);
     });
     it('finds faces attached to an edge', () => {
-        expect(Torus.edgeFaces(a)).toEqual([true, true,
-            { face: face, index: 0 }, { face: face, index: 2 }]);
-        expect(Torus.edgeFaces(b)).toEqual([true, true,
-            { face: face, index: 1 }, { face: face, index: 3 }]);
-        expect(Sphere.edgeFaces(c)).toEqual([true, true,
-            { face: sphereFace, index: 0 }, { face: sphereFace, index: 1 },
+        expect(Torus.edgeFaces(0)).toEqual([true, true,
+            { face: 0, forward: true, index: 0 }, { face: 0, forward: false, index: 2 }]);
+        expect(Torus.edgeFaces(1)).toEqual([true, true,
+            { face: 0, forward: true, index: 1 }, { face: 0, forward: false, index: 3 }]);
+        expect(Sphere.edgeFaces(0)).toEqual([true, true,
+            { face: 0, forward: true, index: 0 }, { face: 0, forward: false, index: 1 },
         ]);
     });
     it('Finds set of edges containing a vertex', () => {
-        expect(Torus.edgesContainingAVertex(v1)).toEqual([
+        expect(Torus.edgesContainingAVertex(0)).toEqual([
             { index: 0, start: true },
             { index: 0, start: false },
             { index: 1, start: true },
             { index: 1, start: false },
         ]);
-        expect(RP2.edgesContainingAVertex(RP2.cells0[0])).toEqual([
+        expect(RP2.edgesContainingAVertex(0)).toEqual([
             { index: 0, start: true },
             { index: 1, start: false },
         ]);
-        expect(RP2.edgesContainingAVertex(RP2.cells0[1])).toEqual([
+        expect(RP2.edgesContainingAVertex(1)).toEqual([
             { index: 0, start: false },
             { index: 1, start: true },
+        ]);
+    });
+    it('describes edges around a vertex', () => {
+        expect(Torus.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+            { index: 1, start: true },
+            { index: 0, start: false },
+            { index: 1, start: false },
+        ]);
+        expect(RP2.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+            { index: 1, start: false },
+        ]);
+        expect(RP2.vertexToEdges[1]).toEqual([
+            { index: 0, start: false },
+            { index: 1, start: true },
+        ]);
+        expect(Sphere.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+        ]);
+        expect(Sphere.vertexToEdges[1]).toEqual([
+            { index: 0, start: false },
+        ]);
+        expect(Klein.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+            { index: 1, start: true },
+            { index: 0, start: false },
+            { index: 1, start: false },
+        ]);
+        expect(Sphere2.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+        ]);
+        expect(Sphere2.vertexToEdges[1]).toEqual([
+            { index: 0, start: false },
+            { index: 1, start: true },
+        ]);
+        expect(Sphere2.vertexToEdges[2]).toEqual([
+            { index: 1, start: false },
+            { index: 2, start: true },
+        ]);
+        expect(Sphere2.vertexToEdges[3]).toEqual([
+            { index: 2, start: false },
+        ]);
+        expect(Cyl.vertexToEdges[0]).toEqual([
+            { index: 2, start: true },
+            { index: 0, start: true },
+            { index: 2, start: false },
+        ]);
+        expect(Cyl.vertexToEdges[1]).toEqual([
+            { index: 1, start: true },
+            { index: 0, start: false },
+            { index: 1, start: false },
+        ]);
+        expect(Sigma3.vertexToEdges[0]).toEqual([
+            { index: 0, start: true },
+            { index: 5, start: true },
+            { index: 4, start: false },
+            { index: 5, start: false },
+            { index: 4, start: true },
+            { index: 3, start: true },
+            { index: 2, start: false },
+            { index: 3, start: false },
+            { index: 2, start: true },
+            { index: 1, start: true },
+            { index: 0, start: false },
+            { index: 1, start: false },
         ]);
     });
 });
