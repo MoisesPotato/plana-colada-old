@@ -572,7 +572,7 @@ describe('It catches mistakes', () => {
 });
 
 
-describe.only('Can make from glueing labels', ()=>{
+describe('Can make a surfce from a string', ()=>{
   // it('A square', ()=> {
   //   const square = Cell2.fromLabels('Square', 4,
   //       [1, 3, true], [2, 0, true]);
