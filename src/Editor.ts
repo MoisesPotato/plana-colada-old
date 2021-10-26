@@ -1,4 +1,3 @@
-/* eslint-disable require-jsdoc */
 import {Cx} from './Cx';
 
 type clickAction = 'none'|'addPoint';
