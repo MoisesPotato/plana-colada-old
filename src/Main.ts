@@ -13,7 +13,7 @@ if (typeof window === 'undefined') {
   displayingGraphics = true;
 } */
 
-import {Cx, CxMatrix} from './Cx';
+// import {Cx, CxMatrix} from './Cx';
 // import {Mobius} from './Mobius';
 import {GameStatus} from './GameStatus';
 import {UniverseInfo} from './UniverseInfo';
@@ -39,8 +39,9 @@ window.onload = function() {
 
 /**
  * What to do once we have fonts
+ * @returns {void}
  */
-function finishLoading() {
+function finishLoading():void {
   const messageObj = document.getElementById('LoadingMessage') as HTMLElement;
   messageObj.style.color = '#000033';
   const g = new GameStatus(); // g for game
@@ -66,12 +67,17 @@ function finishLoading() {
 
 /**
  * For the start and options buttons
- * @param {GameStatus} g
+ * @param {GameStatus} g g
+ * @returns {void}
  */
-function mainMenuListeners(g: GameStatus) {
+function mainMenuListeners(g: GameStatus):void {
   const startButton = document.getElementById('gameStart') as HTMLElement;
-  startButton.addEventListener('click', function(e) {
+  startButton.addEventListener('click', function(_e) {
     startTheGame(g);
+  });
+  const editorButton = document.getElementById('openEditor') as HTMLElement;
+  editorButton.addEventListener('click', function(_e) {
+    openEditor(g);
   });
   const optionsButton = document.getElementById('openOptions') as HTMLElement;
   optionsButton.addEventListener('click', function() {
@@ -79,11 +85,13 @@ function mainMenuListeners(g: GameStatus) {
   });
 }
 
+
 /**
  * Initialize the event listeners once and for all
- * @param {GameStatus} g
+ * @param {GameStatus} g g
+ * @returns {void}
  */
-function setKeyListeners(g: GameStatus) {
+function setKeyListeners(g: GameStatus):void {
   g.keysList = []; // At any given point, keysList[keyCodes.leftKey]
   // should be a Boolean saying if the left key is pressed
   window.onkeyup = function(e) {
@@ -160,16 +168,20 @@ function setKeyListeners(g: GameStatus) {
   g.area.addEventListener('mousedown', function(e) {
     if (e.button === 0) {
       g.mouse.lClick = true;
+      g.editor.mouse.lClick = true;
     } else if (e.button == 2) {
       g.mouse.rClick = true;
+      g.editor.mouse.rClick = true;
     }
   });
 
   g.area.addEventListener('mouseup', function(e) {
     if (e.button === 0) {
       g.mouse.lClick = false;
+      g.editor.mouse.lClick = false;
     } else if (e.button == 2) {
       g.mouse.rClick = false;
+      g.editor.mouse.rClick = false;
     }
   });
 
@@ -178,10 +190,20 @@ function setKeyListeners(g: GameStatus) {
   });
 
   g.area.addEventListener('mousemove', function(evt) {
-    g.mouse.pos = getMousePos(g.area, evt);
+    const position = getMousePos(g.area, evt);
+    g.mouse.pos = position;
+    g.mouse.pos = position;
+  });
+
+  g.area.addEventListener('click', g.editor.click);
+
+  const editorButtons = document.getElementsByClassName('editorButton');
+  Array(editorButtons.length).forEach((_, i) => {
+    editorButtons[i].addEventListener('click', function() {
+      g.editor.clickButton(editorButtons[i].id);
+    });
   });
 }
-
 // ///// COMPLEX NUMBERS /////////////////////
 
 
@@ -190,7 +212,7 @@ function setKeyListeners(g: GameStatus) {
  */
 
 /**
- * @param {number} code
+ * @param {number} code a key Code
  * @return {string} The string to name this key e.g. "tab"
  */
 function stringFromCharCode(code: number):// eslint-disable-line no-unused-vars
@@ -235,6 +257,7 @@ function getMousePos(canvas: HTMLCanvasElement,
  * IDK IF THIS WORKS
  * @param {number} property the parameter
  * @param {string} label label to be displayed
+ * @returns {void}
  */
 function makeChangeable(property: number, label: string) {
   const htmlList = document.getElementById('variables') as HTMLElement;
@@ -259,23 +282,12 @@ TODO rename the word Mobius from these functions!!
 
 
 /**
- * @param {CxMatrix} A
- * @return {Cx}
- */
-function determinant(A: CxMatrix): Cx {// eslint-disable-line no-unused-vars
-  A = Cx.matrix(A);
-  return A[0][0].times(A[1][1]).plus(
-      A[1][0].times(A[0][1]).times(-1),
-  );
-}
-
-
-/**
  * Play a step in the animation
  * or wait some more
  * TODO make it not recursive???
- * @param {GameStatus} g
- * @param {UniverseInfo} u
+ * @param {GameStatus} g g
+ * @param {UniverseInfo} u u
+ * @returns {void}
  */
 function playAnim(g: GameStatus, u: UniverseInfo) {
   const currTime = Date.now();
@@ -363,9 +375,10 @@ function playAnim(g: GameStatus, u: UniverseInfo) {
 
 /**
    * Start the looping (this function runs once)
-   * @param {GameStatus} g
+   * @param {GameStatus} g g
+   * @returns {void}
    */
-function startTheGame(g : GameStatus) {
+function startTheGame(g : GameStatus): void {
   const menu = document.getElementById('mainMenu') as HTMLElement;
   menu.style.display = 'none';
   const u = new UniverseInfo(testingParams.shape,
@@ -377,6 +390,18 @@ function startTheGame(g : GameStatus) {
   then = Date.now();
   g.scene = 'start';
   playAnim(g, u);
+}
+
+/**
+ *
+ * @param g g
+ * @returns void
+ */
+function openEditor(g : GameStatus):void {
+  const menu = document.getElementById('mainMenu') as HTMLElement;
+  menu.style.display = 'none';
+  g.drawBackground();
+  g.scene = 'editor';
 }
 
 

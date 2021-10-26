@@ -38,7 +38,7 @@ export class Cx {
   }
 
   /**
-   * @param {CxLike} z
+   * @param {CxLike} z a number
    * @return {Cx} this + z
    */
   plus(z: CxLike): Cx {
@@ -54,7 +54,8 @@ export class Cx {
   /**
    * Multiplication
    * @param {CxLike} z factor
-   * @param {string} [debugInfo = '']
+   * @param {string} [debugInfo = ''] this might get passed around
+   * in order to throw descriptive errors
    * @return {Cx} this * z
    */
   times(z: CxLike, debugInfo = ''): Cx {
@@ -70,7 +71,7 @@ export class Cx {
   };
 
   /**
-   * @return {boolean}
+   * @return {boolean} is this zero
    */
   isZero(): boolean {
     return this.compare(0);
@@ -147,11 +148,11 @@ export class Cx {
   };
 
   /**
-   * @param  {CxLike} z
+   * @param  {CxLike} z a number
    * @param {string} debugInfo = ""
    * @return {Cx} this/z
    */
-  divide(z: CxLike, debugInfo =''): Cx {
+  divide(z: CxLike, debugInfo :string=''): Cx {
     if (typeof z == 'number') {
       z = Cx.makeNew(z);
     }
@@ -186,8 +187,8 @@ export class Cx {
   }
   /**
  *
- * @param {number} r
- * @param {number} theta
+ * @param {number} r modulus
+ * @param {number} theta argument
  * @return {Cx} complex number
  */
   static polar(r:number, theta:number) : Cx {
@@ -212,8 +213,8 @@ export class Cx {
 
   /**
    * Turn real into complex
-   * @param {CxLike} z
-   * @return {Cx} z
+   * @param {CxLike} z real or complex
+   * @return {Cx} complex (maybe the same number)
    */
   static makeNew(z: CxLike): Cx {
     if (typeof z === 'number') {
@@ -226,17 +227,17 @@ export class Cx {
 
   /**
    * Make the entries Cx
-   * @param {Array.<Array.<CxLike>>} A
-   * @return {Array.<Array.<Cx>>}
+   * @param {Array.<Array.<CxLike>>} A just an array
+   * @return {Array.<Array.<Cx>>} same array, but now the entries are Cx
    */
   static matrix(A: CxLikeMatrix): CxMatrix {
     return [[Cx.makeNew(A[0][0]), Cx.makeNew(A[0][1])],
       [Cx.makeNew(A[1][0]), Cx.makeNew(A[1][1])]];
   }
   /**
-   * A complex number chosen uniformly in a bound x bound box
    * @param {number} [bound=1] Size of the box
-   * @return {Cx}
+   * @return {Cx} a complex number chosen uniformly in the box
+   *  [-bound, bound]x[-bound,bound]
    */
   static random(bound: number): Cx {
     bound = bound || 1;
@@ -246,7 +247,7 @@ export class Cx {
   /**
    * Shouldn't this just return a matrix?
    * @param {CxMatrix} M a matrix
-   * @return {CxMatrix}
+   * @return {CxMatrix} Every term of M is conjugated
    */
   static conjugateMatrix(M: CxMatrix): CxMatrix { // Conjugate every term
     const A = Cx.matrix([[1, 0], [0, 1]]);
@@ -259,7 +260,7 @@ export class Cx {
   }
   /**
  *
- * @return {boolean}
+ * @return {boolean} is it =0 or =infty (or else false)
  */
   isZeroOrInfty():boolean {
     return (this.isZero() || this.isInfty());
@@ -268,9 +269,9 @@ export class Cx {
   /**
    *Is it the same?? can run
    this.compare(cx), (re) or (re, im)
-   * @param {Cx|number} z
-   * @param {number} [b=0]
-   * @return {boolean}
+   * @param {Cx|number} z either a complex number or the real part
+   * @param {number} [b=0] the imaginary part
+   * @return {boolean} is this = the parameter
    */
   compare(z:Cx|number, b:number = 0):boolean {
     let re; let im:number;
@@ -282,6 +283,17 @@ export class Cx {
       im = z.im;
     }
     return (this.re === re && this.im === im);
+  }
+
+  /**
+   * @param {CxMatrix} A a matrix
+   * @return {Cx} the determinant
+   */
+  static determinant(A: CxMatrix): Cx {// eslint-disable-line no-unused-vars
+    A = Cx.matrix(A);
+    return A[0][0].times(A[1][1]).plus(
+        A[1][0].times(A[0][1]).times(-1),
+    );
   }
 }
 

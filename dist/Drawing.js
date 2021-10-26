@@ -1,4 +1,5 @@
 "use strict";
+/* eslint-disable valid-jsdoc */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Draw = void 0;
 const Cx_1 = require("./Cx");
@@ -184,6 +185,21 @@ class Draw {
      */
     static polygonVertices(P, g, u) {
         P.vertices.forEach((v) => Draw.obj(new Thing_1.Thing(v, 'blueDot'), g, u));
+    }
+    /**
+     * draws everything on the editor
+     * @returns void
+     */
+    static editor(g) {
+        g.drawBackground();
+        g.editor.objects.forEach((o) => Draw.editorObj(o));
+    }
+    /**
+   * draws something on the editor
+   * @param o an editor object
+   * @returns void
+   */
+    static editorObj(o) {
     }
 }
 exports.Draw = Draw;

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameStatus = void 0;
 const Cx_1 = require("./Cx");
+const Editor_1 = require("./Editor");
 const KeySet_1 = require("./KeySet");
 /** All the variables go here
  * @property {'start'|'GameOver'|'menu'|'options'|'credits'} scene
@@ -55,13 +56,13 @@ class GameStatus {
         this.speedScale = 1 / 40;
         this.defaultSpeed = 0.01;
         this.then = 0;
+        this.editor = Editor_1.Editor.start();
     }
     /**
-     * Finds the complex number corresponding to pixel coordinates
      * // TODO rename to pixToZ
-     * @param {number} x
-     * @param {number} y
-     * @return {Cx}
+     * @param {number} x pixel left
+     * @param {number} y pixel top
+     * @return {Cx} the complex number corresponding to pixel coordinates
      */
     pixToCoord(x, y) {
         let re = x - this.gameWidth / 2;
@@ -71,10 +72,9 @@ class GameStatus {
         return new Cx_1.Cx(re, im);
     }
     /**
-     * Finds the pixel coordinates from top and bottom of a given complex number
-     * TODO rename to pixToZ
      * @param {CxLike} z -  A complex number representing a point
-     * @return {[number, number]}
+     * @return {[number, number]} the pixel coordinates
+     * from top and bottom of a given complex number
      */
     coordToPix(z) {
         z = Cx_1.Cx.makeNew(z);
@@ -88,6 +88,7 @@ class GameStatus {
     }
     /**
      * Right now, draws a big green rectangle
+     * @returns void
      */
     drawBackground() {
         this.ctx.fillStyle = '#61b061';
@@ -95,12 +96,14 @@ class GameStatus {
     }
     /**
    * don't wait to click buttons, just open stuff automatically
+   * @returns void
    */
     openStuffAutomatically() {
         //  g.startTheGame();
     }
     /**
    * Pauses
+   * @returns void
    */
     pause() {
         this.paused = true;
@@ -111,12 +114,14 @@ class GameStatus {
     }
     /**
      * Unpauses. Easy!
+     * @returns void
      */
     unPause() {
         this.paused = false;
     }
     /**
      * Shows the menu!
+     * @returns void
      */
     showMenu() {
         this.ctx.fillStyle = 'black';
@@ -127,7 +132,8 @@ class GameStatus {
     }
     /**
      * Reads the speed from user input
-     * @param {UniverseInfo} u
+     * @param {UniverseInfo} u u
+     * @returns void
      */
     userInput(u) {
         if (this.mouse.lClick) {
@@ -142,6 +148,7 @@ class GameStatus {
     ;
     /**
      * Come here to change aspect Ratio
+     * @returns void
      */
     setGameDimensions() {
         const aspectRatio = 16 / 9;
@@ -158,7 +165,8 @@ class GameStatus {
         this.scale = 0.4 * this.gameHeight;
     }
     /**
-     * @param  {GameStatus} g
+     * @param  {GameStatus} g g
+     * @returns void
      */
     setResizeListener() {
         const self = this;

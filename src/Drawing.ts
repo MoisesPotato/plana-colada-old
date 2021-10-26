@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 
 
 import {Cx} from './Cx';
@@ -8,6 +9,7 @@ import {Mobius} from './Mobius';
 import {UniverseInfo} from './UniverseInfo';
 import {Wall} from './Wall';
 import {Polygon} from './Polygon';
+import {EditorObject} from './Editor';
 
 // ////////////////////////DRAWING //////
 
@@ -61,6 +63,7 @@ export class Draw {
     g.ctx.rotate(rotation);
     g.ctx.translate(-position[0], -position[1]);
   }
+
 
   /**
    * Draws a thing on the canvas
@@ -222,5 +225,25 @@ export class Draw {
    */
   static polygonVertices(P: Polygon, g: GameStatus, u: UniverseInfo) {
     P.vertices.forEach((v) => Draw.obj(new Thing(v, 'blueDot'), g, u));
+  }
+
+
+  /**
+   * draws everything on the editor
+   * @returns void
+   */
+  static editor(g:GameStatus):void {
+    g.drawBackground();
+    g.editor.objects.forEach((o) => Draw.editorObj(o));
+  }
+
+
+  /**
+ * draws something on the editor
+ * @param o an editor object
+ * @returns void
+ */
+  static editorObj(o:EditorObject):void {
+
   }
 }

@@ -1,4 +1,5 @@
 import {Cx, CxLike} from './Cx';
+import {Editor} from './Editor';
 import {KeySet, keyCodes} from './KeySet';
 import {UniverseInfo} from './UniverseInfo';
 
@@ -27,7 +28,7 @@ import {UniverseInfo} from './UniverseInfo';
  * @property {number} defaultSpeed what is this???
 */
 export class GameStatus {
-  scene: 'menu' | 'start' | 'GameOver' | 'options' | 'credits';
+  scene: 'menu' | 'start' | 'GameOver' | 'options' | 'editor' | 'credits';
   playing: boolean;
   area: HTMLCanvasElement;
   paused: boolean;
@@ -43,6 +44,7 @@ export class GameStatus {
   speedScale: number;
   defaultSpeed: number;
   then : number;
+  editor :Editor;
   /**
    */
   constructor() {
@@ -78,14 +80,14 @@ export class GameStatus {
     this.speedScale = 1 / 40;
     this.defaultSpeed = 0.01;
     this.then = 0;
+    this.editor = Editor.start();
   }
 
   /**
-   * Finds the complex number corresponding to pixel coordinates
    * // TODO rename to pixToZ
-   * @param {number} x
-   * @param {number} y
-   * @return {Cx}
+   * @param {number} x pixel left
+   * @param {number} y pixel top
+   * @return {Cx} the complex number corresponding to pixel coordinates
    */
   pixToCoord(x: number, y: number): Cx {
     let re = x - this.gameWidth / 2;
@@ -97,10 +99,9 @@ export class GameStatus {
 
 
   /**
-   * Finds the pixel coordinates from top and bottom of a given complex number
-   * TODO rename to pixToZ
    * @param {CxLike} z -  A complex number representing a point
-   * @return {[number, number]}
+   * @return {[number, number]} the pixel coordinates
+   * from top and bottom of a given complex number
    */
   coordToPix(z: CxLike): [number, number] {
     z = Cx.makeNew(z);
@@ -115,8 +116,9 @@ export class GameStatus {
 
   /**
    * Right now, draws a big green rectangle
+   * @returns void
    */
-  drawBackground() {
+  drawBackground(): void {
     this.ctx.fillStyle = '#61b061';
     this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
   }
@@ -124,14 +126,16 @@ export class GameStatus {
 
   /**
  * don't wait to click buttons, just open stuff automatically
+ * @returns void
  */
-  openStuffAutomatically() {
+  openStuffAutomatically(): void {
     //  g.startTheGame();
   }
 
 
   /**
  * Pauses
+ * @returns void
  */
   pause() {
     this.paused = true;
@@ -143,6 +147,7 @@ export class GameStatus {
 
   /**
    * Unpauses. Easy!
+   * @returns void
    */
   unPause() {
     this.paused = false;
@@ -151,6 +156,7 @@ export class GameStatus {
 
   /**
    * Shows the menu!
+   * @returns void
    */
   showMenu() {
     this.ctx.fillStyle = 'black';
@@ -163,7 +169,8 @@ export class GameStatus {
 
   /**
    * Reads the speed from user input
-   * @param {UniverseInfo} u
+   * @param {UniverseInfo} u u
+   * @returns void
    */
   userInput(u: UniverseInfo) {
     if (this.mouse.lClick) {
@@ -178,6 +185,7 @@ export class GameStatus {
 
   /**
    * Come here to change aspect Ratio
+   * @returns void
    */
   setGameDimensions() {
     const aspectRatio = 16/9;
@@ -194,7 +202,8 @@ export class GameStatus {
   }
 
   /**
-   * @param  {GameStatus} g
+   * @param  {GameStatus} g g
+   * @returns void
    */
   setResizeListener() {
     const self = this;

@@ -13,7 +13,7 @@ if (typeof window === 'undefined') {
   displayingGraphics = true;
 } */
 Object.defineProperty(exports, "__esModule", { value: true });
-const Cx_1 = require("./Cx");
+// import {Cx, CxMatrix} from './Cx';
 // import {Mobius} from './Mobius';
 const GameStatus_1 = require("./GameStatus");
 const UniverseInfo_1 = require("./UniverseInfo");
@@ -33,6 +33,7 @@ window.onload = function () {
 };
 /**
  * What to do once we have fonts
+ * @returns {void}
  */
 function finishLoading() {
     const messageObj = document.getElementById('LoadingMessage');
@@ -57,12 +58,17 @@ function finishLoading() {
 // }
 /**
  * For the start and options buttons
- * @param {GameStatus} g
+ * @param {GameStatus} g g
+ * @returns {void}
  */
 function mainMenuListeners(g) {
     const startButton = document.getElementById('gameStart');
-    startButton.addEventListener('click', function (e) {
+    startButton.addEventListener('click', function (_e) {
         startTheGame(g);
+    });
+    const editorButton = document.getElementById('openEditor');
+    editorButton.addEventListener('click', function (_e) {
+        openEditor(g);
     });
     const optionsButton = document.getElementById('openOptions');
     optionsButton.addEventListener('click', function () {
@@ -71,7 +77,8 @@ function mainMenuListeners(g) {
 }
 /**
  * Initialize the event listeners once and for all
- * @param {GameStatus} g
+ * @param {GameStatus} g g
+ * @returns {void}
  */
 function setKeyListeners(g) {
     g.keysList = []; // At any given point, keysList[keyCodes.leftKey]
@@ -152,24 +159,37 @@ function setKeyListeners(g) {
     g.area.addEventListener('mousedown', function (e) {
         if (e.button === 0) {
             g.mouse.lClick = true;
+            g.editor.mouse.lClick = true;
         }
         else if (e.button == 2) {
             g.mouse.rClick = true;
+            g.editor.mouse.rClick = true;
         }
     });
     g.area.addEventListener('mouseup', function (e) {
         if (e.button === 0) {
             g.mouse.lClick = false;
+            g.editor.mouse.lClick = false;
         }
         else if (e.button == 2) {
             g.mouse.rClick = false;
+            g.editor.mouse.rClick = false;
         }
     });
     g.area.addEventListener('contextmenu', function (e) {
         e.preventDefault();
     });
     g.area.addEventListener('mousemove', function (evt) {
-        g.mouse.pos = getMousePos(g.area, evt);
+        const position = getMousePos(g.area, evt);
+        g.mouse.pos = position;
+        g.mouse.pos = position;
+    });
+    g.area.addEventListener('click', g.editor.click);
+    const editorButtons = document.getElementsByClassName('editorButton');
+    Array(editorButtons.length).forEach((_, i) => {
+        editorButtons[i].addEventListener('click', function () {
+            g.editor.clickButton(editorButtons[i].id);
+        });
     });
 }
 // ///// COMPLEX NUMBERS /////////////////////
@@ -177,7 +197,7 @@ function setKeyListeners(g) {
  * Gives the key codes names for easy access
  */
 /**
- * @param {number} code
+ * @param {number} code a key Code
  * @return {string} The string to name this key e.g. "tab"
  */
 function stringFromCharCode(code) {
@@ -224,6 +244,7 @@ function getMousePos(canvas, evt) {
  * IDK IF THIS WORKS
  * @param {number} property the parameter
  * @param {string} label label to be displayed
+ * @returns {void}
  */
 function makeChangeable(property, label) {
     const htmlList = document.getElementById('variables');
@@ -245,19 +266,12 @@ can be taken to be complex-like rather than complex
 TODO rename the word Mobius from these functions!!
  */
 /**
- * @param {CxMatrix} A
- * @return {Cx}
- */
-function determinant(A) {
-    A = Cx_1.Cx.matrix(A);
-    return A[0][0].times(A[1][1]).plus(A[1][0].times(A[0][1]).times(-1));
-}
-/**
  * Play a step in the animation
  * or wait some more
  * TODO make it not recursive???
- * @param {GameStatus} g
- * @param {UniverseInfo} u
+ * @param {GameStatus} g g
+ * @param {UniverseInfo} u u
+ * @returns {void}
  */
 function playAnim(g, u) {
     const currTime = Date.now();
@@ -339,7 +353,8 @@ function playAnim(g, u) {
 // }
 /**
    * Start the looping (this function runs once)
-   * @param {GameStatus} g
+   * @param {GameStatus} g g
+   * @returns {void}
    */
 function startTheGame(g) {
     const menu = document.getElementById('mainMenu');
@@ -352,4 +367,15 @@ function startTheGame(g) {
     then = Date.now();
     g.scene = 'start';
     playAnim(g, u);
+}
+/**
+ *
+ * @param g g
+ * @returns void
+ */
+function openEditor(g) {
+    const menu = document.getElementById('mainMenu');
+    menu.style.display = 'none';
+    g.drawBackground();
+    g.scene = 'editor';
 }
