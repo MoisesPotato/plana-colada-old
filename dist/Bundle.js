@@ -501,15 +501,38 @@ exports.Draw = Draw;
 },{"./Cx":1,"./Editor":3,"./Thing":10}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
+exports.EditorEdge = exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
+const Cx_1 = require("./Cx");
 const Drawing_1 = require("./Drawing");
 const pointStyle = {
     color: '#ff0000',
     radius: 3,
+    label: '',
+    fill: true,
 };
 const cursorPointStyle = {
     color: '#ffb30f',
     radius: 4,
+    label: '',
+    fill: true,
+};
+const startingEdgeStyle = {
+    color: '#f2f542',
+    radius: 3,
+    label: 'Start',
+    fill: false,
+};
+const endingEdgeStyle = {
+    color: '#f2f542',
+    radius: 3,
+    label: 'End',
+    fill: false,
+};
+const lineStyle = {
+    color: 'black',
+    radius: 0,
+    label: '',
+    fill: false,
 };
 /**
  * @property {editorObject[]} objects list of drawn stuff
@@ -535,23 +558,102 @@ class Editor {
         switch (buttonID) {
             case 'addPoint':
                 this.onClick = 'addPoint';
-                const pointer = EditorPoint.newPoint(this.g.mousePosCx, true);
-                this.objects.push(pointer);
-                Drawing_1.Draw.editor(this.g);
+                this.cursorGrabsNewPoint(cursorPointStyle);
+                break;
+            case 'addEdge':
+                this.onClick = 'addEdgeStart';
+                this.cursorGrabsNewPoint(cursorPointStyle);
+                break;
         }
+        Drawing_1.Draw.editor(this.g);
+    }
+    /**
+   * Creates a new point and makes it follow cursor
+   * @param style the style of new point
+   * @returns void
+   */
+    cursorGrabsNewPoint(style) {
+        const pointer = EditorPoint.newPoint(this.g.mousePosCx, true, style);
+        this.objects.push(pointer);
     }
     /**
    * Does an action that depends on this.onClick
    * @returns void
     */
     click() {
+        console.log('canvas click');
         switch (this.onClick) {
             case 'none':
-                this.checkForClickedObjects();
+                this.selectByClick();
                 return;
             case 'addPoint':
                 this.placePointAtCursor();
                 return;
+            case 'addEdgeStart':
+                this.startEdgeAtCursor();
+                return;
+            case 'addEdgeEnd':
+                this.endEdgeAtCursor();
+        }
+    }
+    /**
+     * Creates a new edge with starting vertex at the cursor.
+     * If we are not clicking any vertex, creates a new vertex
+     * Otherwise, places a vertex as the start
+     * @returns void
+     */
+    startEdgeAtCursor() {
+        const clickedPoint = this.findClicked('point');
+        let v1;
+        if (!this.cursor) {
+            throw new Error('There is no cursor!');
+        }
+        if (clickedPoint > -1) {
+            v1 = this.objects[clickedPoint];
+        }
+        else {
+            v1 = this.cursor;
+            v1.pointer = false;
+            this.cursorGrabsNewPoint(endingEdgeStyle);
+        }
+        v1.style = pointStyle;
+        const v2 = this.cursor;
+        this.objects.push(EditorEdge.fromEndPoints(v1, v2));
+        this.onClick = 'addEdgeEnd';
+        Drawing_1.Draw.editor(this.g);
+    }
+    /**
+   * Drops the current point in place
+   * @returns none
+   */
+    endEdgeAtCursor() {
+        if (!this.cursor) {
+            throw new Error('There is no cursor!');
+        }
+        this.cursor.style = pointStyle;
+        this.cursor.pointer = false;
+        this.onClick = 'none';
+        console.log(JSON.stringify(this.objects));
+        Drawing_1.Draw.editor(this.g);
+    }
+    /**
+   *
+   * @param type are we looking for just points/edges or any
+   * @returns the index of the first object that is clicked, or -1
+   */
+    findClicked(type = '') {
+        const mousePos = this.g.mousePosCx;
+        switch (type) {
+            case '':
+                return this.objects.findIndex((o) => o.closeTo(mousePos, this.g));
+            case 'point':
+                return this.objects.findIndex((o) => {
+                    return o instanceof EditorPoint && o.closeTo(mousePos, this.g);
+                });
+            case 'edge':
+                return this.objects.findIndex((o) => {
+                    return o instanceof EditorEdge && o.closeTo(mousePos, this.g);
+                });
         }
     }
     /**
@@ -580,18 +682,25 @@ class Editor {
    * are clicked and takes action accordingly
    * @returns void
    */
-    checkForClickedObjects() {
-        const mousePos = this.g.mousePosCx;
-        const clicks = this.objects.map((o) => o.closeTo(mousePos, this.g));
-        const clicked = clicks.indexOf(true);
+    selectByClick() {
+        const clicked = this.findClicked('');
         if (clicked > -1) {
-            const clickedObject = this.objects[clicked];
-            // remove the pointer
-            this.objects = this.objects.filter((o) => !o.pointer);
-            clickedObject.pointer = true;
-            clickedObject.style = cursorPointStyle;
+            this.pickUpPoint(clicked);
             this.onClick = 'addPoint';
         }
+    }
+    /**
+   * Takes first point with this index and makes it into the cursor
+   * Removes the existing cursor if it's there
+   * @param i index
+   * @returns void
+   */
+    pickUpPoint(i) {
+        const clickedObject = this.objects[i];
+        // remove the pointer
+        this.objects = this.objects.filter((o) => !o.pointer);
+        clickedObject.pointer = true;
+        clickedObject.style = cursorPointStyle;
     }
     /**
      * adds a point at position t
@@ -617,17 +726,12 @@ class Editor {
    * @returns void
    */
     mouseMove() {
-        switch (this.onClick) {
-            case 'none':
-                return;
-            case 'addPoint':
-                window.requestAnimationFrame(() => {
-                    if (this.cursor) {
-                        this.cursor.pos = this.g.mousePosCx;
-                    }
-                    Drawing_1.Draw.editor(this.g);
-                });
-        }
+        window.requestAnimationFrame(() => {
+            if (this.cursor) {
+                this.cursor.pos = this.g.mousePosCx;
+            }
+            Drawing_1.Draw.editor(this.g);
+        });
     }
 }
 exports.Editor = Editor;
@@ -695,8 +799,45 @@ class EditorPoint extends EditorObject {
     }
 }
 exports.EditorPoint = EditorPoint;
+/**
+   *
+   * @property {Cx} pos this is just infty for an edge
+   * @property {editorStyle} style color?
+   * @property {boolean} pointer this is just false
+   * @property {EditorPoint} start starting vertex
+   * @property {EditorPoint} end ending vertex
+   */
+class EditorEdge extends EditorObject {
+    /**
+     *
+     * @param pos this is just infty for an edge
+     * @param style color?
+     * @param pointer this is just false
+     * @param start starting vertex
+     * @param end ending vertex
+     */
+    constructor(pos, style, pointer, start, end) {
+        super(pos, style, pointer);
+        this.start = start;
+        this.end = end;
+    }
+    /**
+   *
+   * @param v1 start
+   * @param v2 end
+   * @param style style (optional)
+   * @returns an edge with these endpoints
+   */
+    static fromEndPoints(v1, v2, style) {
+        if (!style) {
+            style = lineStyle;
+        }
+        return new EditorEdge(Cx_1.Cx.infty(), style, false, v1, v2);
+    }
+}
+exports.EditorEdge = EditorEdge;
 
-},{"./Drawing":2}],4:[function(require,module,exports){
+},{"./Cx":1,"./Drawing":2}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameStatus = void 0;

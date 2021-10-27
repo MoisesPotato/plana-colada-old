@@ -2,17 +2,42 @@ import {Cx} from './Cx';
 import {Draw} from './Drawing';
 import {GameStatus} from './GameStatus';
 
-type clickAction = 'none'|'addPoint';
+type clickAction = 'none'|'addPoint'|'addEdgeStart'|'addEdgeEnd';
 
 
 const pointStyle = {
   color: '#ff0000',
   radius: 3,
+  label: '',
+  fill: true,
 };
 
 const cursorPointStyle = {
   color: '#ffb30f',
   radius: 4,
+  label: '',
+  fill: true,
+};
+
+const startingEdgeStyle = {
+  color: '#f2f542',
+  radius: 3,
+  label: 'Start',
+  fill: false,
+};
+
+const endingEdgeStyle = {
+  color: '#f2f542',
+  radius: 3,
+  label: 'End',
+  fill: false,
+};
+
+const lineStyle = {
+  color: 'black',
+  radius: 0,
+  label: '',
+  fill: false,
 };
 
 /**
@@ -45,10 +70,24 @@ export class Editor {
     switch (buttonID) {
       case 'addPoint':
         this.onClick = 'addPoint';
-        const pointer = EditorPoint.newPoint(this.g.mousePosCx, true);
-        this.objects.push(pointer);
-        Draw.editor(this.g);
+        this.cursorGrabsNewPoint(cursorPointStyle);
+        break;
+      case 'addEdge':
+        this.onClick = 'addEdgeStart';
+        this.cursorGrabsNewPoint(cursorPointStyle);
+        break;
     }
+    Draw.editor(this.g);
+  }
+
+  /**
+ * Creates a new point and makes it follow cursor
+ * @param style the style of new point
+ * @returns void
+ */
+  cursorGrabsNewPoint(style:editorStyle):void {
+    const pointer = EditorPoint.newPoint(this.g.mousePosCx, true, style);
+    this.objects.push(pointer);
   }
 
   /**
@@ -56,13 +95,81 @@ export class Editor {
  * @returns void
   */
   click():void {
+    console.log('canvas click');
     switch (this.onClick) {
       case 'none':
-        this.checkForClickedObjects();
+        this.selectByClick();
         return;
       case 'addPoint':
         this.placePointAtCursor();
         return;
+      case 'addEdgeStart':
+        this.startEdgeAtCursor();
+        return;
+      case 'addEdgeEnd':
+        this.endEdgeAtCursor();
+    }
+  }
+
+  /**
+   * Creates a new edge with starting vertex at the cursor.
+   * If we are not clicking any vertex, creates a new vertex
+   * Otherwise, places a vertex as the start
+   * @returns void
+   */
+  startEdgeAtCursor():void {
+    const clickedPoint = this.findClicked('point');
+    let v1:EditorPoint;
+    if (!this.cursor) {
+      throw new Error('There is no cursor!');
+    }
+    if (clickedPoint > -1) {
+      v1 = this.objects[clickedPoint];
+    } else {
+      v1 = this.cursor;
+      v1.pointer = false;
+      this.cursorGrabsNewPoint(endingEdgeStyle);
+    }
+    v1.style = pointStyle;
+    const v2 = this.cursor;
+    this.objects.push(EditorEdge.fromEndPoints(v1, v2));
+    this.onClick = 'addEdgeEnd';
+    Draw.editor(this.g);
+  }
+
+  /**
+ * Drops the current point in place
+ * @returns none
+ */
+  endEdgeAtCursor():void {
+    if (!this.cursor) {
+      throw new Error('There is no cursor!');
+    }
+    this.cursor.style = pointStyle;
+    this.cursor.pointer = false;
+    this.onClick = 'none';
+    console.log(JSON.stringify(this.objects));
+    Draw.editor(this.g);
+  }
+
+  /**
+ *
+ * @param type are we looking for just points/edges or any
+ * @returns the index of the first object that is clicked, or -1
+ */
+  findClicked(type:''|'point'|'edge' = ''):number {
+    const mousePos = this.g.mousePosCx;
+    switch (type) {
+      case '':
+        return this.objects.findIndex((o) => o.closeTo(mousePos, this.g));
+      case 'point':
+        return this.objects.findIndex((o) => {
+          return o instanceof EditorPoint && o.closeTo(mousePos, this.g);
+        });
+      case 'edge':
+        return this.objects.findIndex((o) => {
+          return o instanceof EditorEdge && o.closeTo(mousePos, this.g);
+        });
     }
   }
 
@@ -93,18 +200,26 @@ export class Editor {
  * are clicked and takes action accordingly
  * @returns void
  */
-  checkForClickedObjects():void {
-    const mousePos = this.g.mousePosCx;
-    const clicks = this.objects.map((o) => o.closeTo(mousePos, this.g));
-    const clicked = clicks.indexOf(true);
+  selectByClick():void {
+    const clicked = this.findClicked('');
     if (clicked > -1) {
-      const clickedObject = this.objects[clicked];
-      // remove the pointer
-      this.objects = this.objects.filter((o) => !o.pointer);
-      clickedObject.pointer = true;
-      clickedObject.style = cursorPointStyle;
+      this.pickUpPoint(clicked);
       this.onClick = 'addPoint';
     }
+  }
+
+  /**
+ * Takes first point with this index and makes it into the cursor
+ * Removes the existing cursor if it's there
+ * @param i index
+ * @returns void
+ */
+  pickUpPoint(i:number):void {
+    const clickedObject = this.objects[i];
+    // remove the pointer
+    this.objects = this.objects.filter((o) => !o.pointer);
+    clickedObject.pointer = true;
+    clickedObject.style = cursorPointStyle;
   }
 
   /**
@@ -133,23 +248,20 @@ export class Editor {
  * @returns void
  */
   mouseMove():void {
-    switch (this.onClick) {
-      case 'none':
-        return;
-      case 'addPoint':
-        window.requestAnimationFrame(() =>{
-          if (this.cursor) {
-            this.cursor.pos = this.g.mousePosCx;
-          }
-          Draw.editor(this.g);
-        } );
-    }
+    window.requestAnimationFrame(() =>{
+      if (this.cursor) {
+        this.cursor.pos = this.g.mousePosCx;
+      }
+      Draw.editor(this.g);
+    } );
   }
 }
 
-type editorStyle = {
+interface editorStyle {
     color:string,
-    radius:number,
+    radius?:number,
+    label?:string,
+    fill?:boolean
 }
 /**
  * @property {editorStyle} style currently just the color
@@ -216,5 +328,49 @@ export class EditorPoint extends EditorObject {
       style = pointer?cursorPointStyle:pointStyle;
     }
     return new EditorPoint(style, pos, pointer);
+  }
+}
+
+/**
+   *
+   * @property {Cx} pos this is just infty for an edge
+   * @property {editorStyle} style color?
+   * @property {boolean} pointer this is just false
+   * @property {EditorPoint} start starting vertex
+   * @property {EditorPoint} end ending vertex
+   */
+export class EditorEdge extends EditorObject {
+  start:EditorPoint;
+  end:EditorPoint;
+
+  /**
+   *
+   * @param pos this is just infty for an edge
+   * @param style color?
+   * @param pointer this is just false
+   * @param start starting vertex
+   * @param end ending vertex
+   */
+  constructor(pos:Cx, style:editorStyle, pointer:boolean,
+      start: EditorPoint, end: EditorPoint) {
+    super(pos, style, pointer);
+    this.start = start;
+    this.end = end;
+  }
+
+
+  /**
+ *
+ * @param v1 start
+ * @param v2 end
+ * @param style style (optional)
+ * @returns an edge with these endpoints
+ */
+  static fromEndPoints(v1:EditorPoint, v2:EditorPoint,
+      style?:editorStyle):EditorEdge {
+    if (!style) {
+      style = lineStyle;
+    }
+    return new EditorEdge(Cx.infty(), style, false, v1, v2);
   }
 }
