@@ -4,6 +4,7 @@ import {GameStatus} from './GameStatus';
 
 type clickAction = 'none'|'addPoint';
 
+const pointsColor = '#ff0000';
 
 /**
  * @property {editorObject[]} objects list of drawn stuff
@@ -13,6 +14,12 @@ export class Editor {
   onClick : clickAction;
   g: GameStatus;
 
+  /**
+   *
+   * @param objects drawn things
+   * @param onClick what will happen when we click
+   * @param g g
+   */
   constructor(objects: EditorObject[], onClick: clickAction, g:GameStatus) {
     this.objects = objects;
     this.onClick = onClick;
@@ -28,8 +35,9 @@ export class Editor {
   clickButton(buttonID:string):void {
     switch (buttonID) {
       case 'addPoint':
-        console.log('clicked');
         this.onClick = 'addPoint';
+        const pointer = EditorPoint.newPoint(Cx.makeNew(0), pointsColor, true);
+        this.objects.push(pointer);
     }
   }
 
@@ -42,19 +50,28 @@ export class Editor {
       case 'none':
         return;
       case 'addPoint':
-        this.clickPoint();
+        this.clickToMakePoint();
         return;
     }
+  }
+
+  /**
+ * @returns the object which is the cursor currently
+ */
+  get cursor():EditorObject|undefined {
+    return this.objects.filter((a) => a.pointer)[0];
   }
 
   /**
    * Adds a point at the cursor position
    * @returns void
    */
-  clickPoint():void {
-    const position = this.g.pixToCoord( this.g.mouse.pos[0],
-        this.g.mouse.pos[1] );
-    this.addPoint(position, '#ff0000');
+  clickToMakePoint():void {
+    if (this.cursor) {
+      this.cursor.pointer = false;
+    } else {
+      throw new Error('Tried to make a point but the cursor doesn\'t exist');
+    }
   }
 
   /**
@@ -63,7 +80,7 @@ export class Editor {
    * @param color color (#ffffff)
    * @returns void
    */
-  addPoint(pos:Cx, color:string):void {
+  createPoint(pos:Cx, color:string):void {
     this.objects.push(EditorPoint.newPoint(pos, color));
     Draw.editor(this.g);
   }
@@ -76,29 +93,75 @@ export class Editor {
   static start(g:GameStatus):Editor {
     return new Editor([], 'none', g);
   }
+
+  /**
+ * updates the position of the cursor
+ * redraws... will this break everything?
+ * @returns void
+ */
+  mouseMove():void {
+    switch (this.onClick) {
+      case 'none':
+        return;
+      case 'addPoint':
+        window.requestAnimationFrame(() =>{
+          if (this.cursor) {
+            this.cursor.pos = this.g.mousePosCx;
+          }
+          Draw.editor(this.g);
+        } );
+    }
+  }
 }
 
 type editorStyle = {
     color:string,
 }
-
+/**
+ * @property {editorStyle} style currently just the color
+ * @property {boolean} pointer is this the cursor?
+ * @property {Cx} pos where it is
+ */
 export class EditorObject {
   style:editorStyle;
-
-  constructor(style: editorStyle) {
-    this.style = style;
-  }
-}
-
-export class EditorPoint extends EditorObject {
+  pointer:boolean;
   pos:Cx;
 
-  constructor(style:editorStyle, pos: Cx) {
-    super(style);
+  /**
+   * see {@link EditorObject} doc
+   * @param pos pos
+   * @param style style
+   * @param pointer where
+   */
+  constructor(pos:Cx, style: editorStyle, pointer: boolean) {
     this.pos = pos;
+    this.style = style;
+    this.pointer = pointer;
+  }
+}
+/**
+ * For points
+ */
+export class EditorPoint extends EditorObject {
+  /**
+   * see {@link EditorObject} doc
+   * @param style style
+   * @param pos pos
+   * @param pointer cursor
+   */
+  constructor(style:editorStyle, pos: Cx, pointer:boolean) {
+    super(pos, style, pointer);
+    this.pointer = pointer;
   }
 
-  static newPoint(pos:Cx, color:string):EditorPoint {
-    return new EditorPoint({color: color}, pos);
+  /**
+   *
+   * @param pos position
+   * @param color color (we are using red rn)
+   * @param pointer is this the cursor
+   * @returns an EditorPoint to be put in {@link Editor}.objects
+   */
+  static newPoint(pos:Cx, color:string, pointer = false):EditorPoint {
+    return new EditorPoint({color: color}, pos, pointer);
   }
 }

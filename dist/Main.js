@@ -179,9 +179,14 @@ function setKeyListeners(g) {
         const position = getMousePos(g.area, evt);
         g.mouse.pos = position;
         g.mouse.pos = position;
+        if (g.scene == 'editor') {
+            g.editor.mouseMove();
+        }
     });
     g.area.addEventListener('click', () => {
-        g.editor.click();
+        if (g.scene == 'editor') {
+            g.editor.click();
+        }
     });
     const editorButtons = document.getElementsByClassName('editorButton');
     Array(editorButtons.length).fill(0).forEach((_, i) => {

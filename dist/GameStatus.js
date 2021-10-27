@@ -171,6 +171,14 @@ class GameStatus {
         this.scale = 0.4 * this.gameHeight;
     }
     /**
+   * @returns the position of the mouse
+   * as a complex number
+   */
+    get mousePosCx() {
+        const [x, y] = this.mouse.pos;
+        return this.pixToCoord(x, y);
+    }
+    /**
      * @param  {GameStatus} g g
      * @returns void
      */

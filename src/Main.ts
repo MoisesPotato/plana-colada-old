@@ -189,10 +189,15 @@ function setKeyListeners(g: GameStatus):void {
     const position = getMousePos(g.area, evt);
     g.mouse.pos = position;
     g.mouse.pos = position;
+    if (g.scene == 'editor') {
+      g.editor.mouseMove();
+    }
   });
 
   g.area.addEventListener('click', () => {
-    g.editor.click();
+    if (g.scene == 'editor') {
+      g.editor.click();
+    }
   });
 
   const editorButtons = document.getElementsByClassName('editorButton');
