@@ -19,7 +19,7 @@ export class UniverseInfo {
   speed: Cx;
   domain: Polygon;
   /**
-   * @param {orbiName} domain
+   * @param {orbiName} domain The shape of where we are
    * @param {number[]} lengths some parameters, depends
    * on shape
    */
@@ -34,8 +34,9 @@ export class UniverseInfo {
   /**
    * Creates the polygon and walls
    * @param {string} label Orbifold notation?
+   * @returns void
    */
-  makeDomain(label: string) {
+  makeDomain(label: string):void {
     switch (label) {
       case 'o':
         this.curvature = 0;
@@ -61,8 +62,9 @@ export class UniverseInfo {
   /**
    * A step of one frame.
    * Moves objects and walls
+   * @returns void
    */
-  move() {
+  move():void {
     const M = Mobius.find(this.speed, this.curvature); // / sends speed to 0
     if (!this.speed.isZero() && !isNaN(M.matrix[1][0].re)) {
       this.objectList.forEach((o) => o.pos = M.apply(o.pos),
@@ -75,8 +77,9 @@ export class UniverseInfo {
  * Adds trees
  * @param {number} n - How many?
  * @param {number} spread - How far apart?
+ * @returns void
  */
-  addRandomObjects(n: number, spread: number) {
+  addRandomObjects(n: number, spread: number):void {
     for (let i = 0; i < n; i++) {
       const pos = Cx.random(spread);
       const o = new Thing(pos, 'Tree');
@@ -86,14 +89,15 @@ export class UniverseInfo {
 
 
   /**
-   * This is the norm of the differential of the Mobius transformation
+   *
+   * @param {Cx} z Where
+   * @return {number} This is the norm of the differential
+   * of the Mobius transformation
    * from 0 to z. I.e. If the thing is size 1 at the origin, it has size
    * localScale if it is at z.
-   * @param {Cx} z Where
-   * @return {number}
    */
   localScale(z: Cx): number {
-    const S = 1 + z.absSq() * this.curvature;
+    const S = 1 + z.absSq * this.curvature;
     return Math.max(0, S);
   }
 }

@@ -4,7 +4,16 @@ import {GameStatus} from './GameStatus';
 
 type clickAction = 'none'|'addPoint';
 
-const pointsColor = '#ff0000';
+
+const pointStyle = {
+  color: '#ff0000',
+  radius: 3,
+};
+
+const cursorPointStyle = {
+  color: '#ffb30f',
+  radius: 4,
+};
 
 /**
  * @property {editorObject[]} objects list of drawn stuff
@@ -36,8 +45,9 @@ export class Editor {
     switch (buttonID) {
       case 'addPoint':
         this.onClick = 'addPoint';
-        const pointer = EditorPoint.newPoint(Cx.makeNew(0), pointsColor, true);
+        const pointer = EditorPoint.newPoint(this.g.mousePosCx, true);
         this.objects.push(pointer);
+        Draw.editor(this.g);
     }
   }
 
@@ -48,9 +58,10 @@ export class Editor {
   click():void {
     switch (this.onClick) {
       case 'none':
+        this.checkForClickedObjects();
         return;
       case 'addPoint':
-        this.clickToMakePoint();
+        this.placePointAtCursor();
         return;
     }
   }
@@ -66,11 +77,33 @@ export class Editor {
    * Adds a point at the cursor position
    * @returns void
    */
-  clickToMakePoint():void {
+  placePointAtCursor():void {
     if (this.cursor) {
+      this.cursor.style = pointStyle;
       this.cursor.pointer = false;
+      this.onClick = 'none';
+      Draw.editor(this.g);
     } else {
       throw new Error('Tried to make a point but the cursor doesn\'t exist');
+    }
+  }
+
+  /**
+ * Runs through the objects to see which ones
+ * are clicked and takes action accordingly
+ * @returns void
+ */
+  checkForClickedObjects():void {
+    const mousePos = this.g.mousePosCx;
+    const clicks = this.objects.map((o) => o.closeTo(mousePos, this.g));
+    const clicked = clicks.indexOf(true);
+    if (clicked > -1) {
+      const clickedObject = this.objects[clicked];
+      // remove the pointer
+      this.objects = this.objects.filter((o) => !o.pointer);
+      clickedObject.pointer = true;
+      clickedObject.style = cursorPointStyle;
+      this.onClick = 'addPoint';
     }
   }
 
@@ -81,7 +114,7 @@ export class Editor {
    * @returns void
    */
   createPoint(pos:Cx, color:string):void {
-    this.objects.push(EditorPoint.newPoint(pos, color));
+    this.objects.push(EditorPoint.newPoint(pos));
     Draw.editor(this.g);
   }
 
@@ -116,6 +149,7 @@ export class Editor {
 
 type editorStyle = {
     color:string,
+    radius:number,
 }
 /**
  * @property {editorStyle} style currently just the color
@@ -138,6 +172,22 @@ export class EditorObject {
     this.style = style;
     this.pointer = pointer;
   }
+
+  /**
+   *
+   * @param z a position on the screen
+   * @returns true if this is closeand this is not the pointer
+   * (within some tolerance...)
+   */
+  closeTo(z:Cx, {scale: scale}:{scale:number}):boolean {
+    if (this instanceof EditorPoint && !this.pointer) {
+      const dist = z.plus(this.pos.times(-1));
+      const tolerance = 0.005; // Square distance!!
+      return dist.absSq < tolerance;
+    } else {
+      return false;
+    }
+  }
 }
 /**
  * For points
@@ -157,11 +207,14 @@ export class EditorPoint extends EditorObject {
   /**
    *
    * @param pos position
-   * @param color color (we are using red rn)
    * @param pointer is this the cursor
+   * @param style style data, or default for a point
    * @returns an EditorPoint to be put in {@link Editor}.objects
    */
-  static newPoint(pos:Cx, color:string, pointer = false):EditorPoint {
-    return new EditorPoint({color: color}, pos, pointer);
+  static newPoint(pos:Cx, pointer = false, style? :editorStyle):EditorPoint {
+    if (!style) {
+      style = pointer?cursorPointStyle:pointStyle;
+    }
+    return new EditorPoint(style, pos, pointer);
   }
 }

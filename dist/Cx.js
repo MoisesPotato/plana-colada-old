@@ -74,7 +74,7 @@ class Cx {
     /**
      * @return {number} |this|^2
      */
-    absSq() {
+    get absSq() {
         return this.re * this.re + this.im * this.im;
     }
     ;
@@ -82,7 +82,7 @@ class Cx {
      * @return {number} |this|
      */
     abs() {
-        return Math.sqrt(this.absSq());
+        return Math.sqrt(this.absSq);
     }
     ;
     /**
@@ -135,8 +135,8 @@ class Cx {
      * @return {Cx} this^(-1)
      */
     inv() {
-        const absSq = this.absSq();
-        if (this.absSq() === 0) {
+        const absSq = this.absSq;
+        if (absSq === 0) {
             return Cx.infty();
         }
         else {
@@ -162,7 +162,7 @@ class Cx {
      * @return {Cx} this^n
      */
     power(n) {
-        let R2 = this.absSq();
+        let R2 = this.absSq;
         let a = this.arg();
         R2 = Math.pow(R2, n / 2);
         a = a * n;

@@ -46,11 +46,11 @@ export class KeySet {
   special: number;
   /**
    * Input codes for all controls
-   * @param {number} moveLeft
-   * @param {number} moveRight
-   * @param {number} thrust
-   * @param {number} fire
-   * @param {number} special
+   * @param {number} moveLeft which key to do this
+   * @param {number} moveRight which key to do this
+   * @param {number} thrust which key to do this
+   * @param {number} fire which key to do this
+   * @param {number} special which key to do this
    */
   constructor(moveLeft: number,
       moveRight: number,
@@ -68,8 +68,9 @@ export class KeySet {
    * changeKey(left, 3) makes keyCode 3  become the left control
    * @param {string} whichKey left, right, thrust, fire, special
    * @param {number} newCode keyCode for new key
+   * @returns void
    */
-  changeKey(whichKey: string, newCode: number) {
+  changeKey(whichKey: string, newCode: number):void {
     switch (whichKey) {
       case 'left':
         this.moveLeft = newCode;

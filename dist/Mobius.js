@@ -14,8 +14,8 @@ const Cx_1 = require("./Cx");
  */
 class Mobius {
     /**
-     * @param {CxLikeMatrix} matrix
-     * @param {boolean} cong
+     * @param {CxLikeMatrix} matrix the matrix
+     * @param {boolean} cong does it flip orientation
      */
     constructor(matrix, cong) {
         // A mobius transformation is the matrix, then conjugation maybe
@@ -27,7 +27,7 @@ class Mobius {
    */
     /**
      * Composition of Mobius tranformations.
-     * @param {Mobius} M2
+     * @param {Mobius} M2 another mobius
      * @return {Mobius} this o M2
      */
     times(M2) {
@@ -67,14 +67,15 @@ class Mobius {
         return new Mobius(B, this.cong);
     }
     /**
-     * Find the unique Mobius transformation such that
-     * z1 --> 0
-     * z2 --> a positive real number
+     *
      * TODO replace u by u.curvature
      * @param {Cx} z1 - Point 1
      * @param {Cx} z2 - Point 2
-     * @param {number} curvature
+     * @param {number} curvature u.curvature
      * @return {Mobius}
+     * Find the unique Mobius transformation such that
+     * z1 --> 0
+     * z2 --> a positive real number
      */
     static twoPoints(z1, z2, curvature) {
         const M1 = Mobius.find(z1, curvature); // sends z1 to 0
@@ -90,8 +91,8 @@ class Mobius {
         return M2.times(M1); // sends z1 to 0 and z2 to the reals
     }
     /**
-     * @param  {Cx} z
-     * @return {Cx}
+     * @param  {Cx} z a point
+     * @return {Cx} this * z
      */
     apply(z) {
         let debugInfo = '';
@@ -131,8 +132,8 @@ class Mobius {
     }
     ;
     /**
-     * Tell us if there is 0 or infty among the entries
-     * @return {boolean}
+     *
+     * @return {boolean} Tell us if there is 0 or infty among the entries
      */
     hasZeroOrInfty() {
         let answer = false;
@@ -141,6 +142,7 @@ class Mobius {
     }
     /**
    * Throws an error if all entries are zeroes
+   * @returns void
    */
     isZero() {
         let answer = true;
@@ -150,26 +152,26 @@ class Mobius {
         }
     }
     /**
-     * Finds the isometry that sends z to 0 and 0 to -z
+     *
+     * @param {CxLike} z z below
+     * @param {number} curvature - the curvature
+     * @return {Mobius} Finds the isometry that sends z to 0 and 0 to -z
      * If g is the curvature, this Mobius transformation is
      * x --> (x-z)/(\overline z * g * x + 1)
-     * @param {CxLike} z
-     * @param {number} curvature - the curvature
-     * @return {Mobius}
      */
     static find(z, curvature) {
         z = Cx_1.Cx.makeNew(z);
         if (z.isInfty() && curvature > 0) {
             return new Mobius([[0, 1], [1, 0]], false);
         }
-        let deter = 1 / (1 + z.absSq() * curvature);
+        let deter = 1 / (1 + z.absSq * curvature);
         deter = Math.sqrt(deter);
         return new Mobius(Cx_1.Cx.matrix([[deter, z.times(-1).times(deter)],
             [z.cong().times(curvature * deter), deter]]), false);
     }
     /**
    * Makes readable
-   * @return {string}
+   * @return {string} '[a+bi,c+di\n e+fi..]
    */
     toString() {
         const A = this.matrix.map((row) => row.map((entry) => entry.toString()));
@@ -177,7 +179,7 @@ class Mobius {
         return answer;
     }
     /**
-     * @return {boolean}
+     * @return {boolean} is this the identity
    */
     isIdentity() {
         if (this.cong) {

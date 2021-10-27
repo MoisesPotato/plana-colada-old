@@ -1,9 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
-const Cx_1 = require("./Cx");
 const Drawing_1 = require("./Drawing");
-const pointsColor = '#ff0000';
+const pointStyle = {
+    color: '#ff0000',
+    radius: 3,
+};
+const cursorPointStyle = {
+    color: '#ffb30f',
+    radius: 4,
+};
 /**
  * @property {editorObject[]} objects list of drawn stuff
  */
@@ -28,8 +34,9 @@ class Editor {
         switch (buttonID) {
             case 'addPoint':
                 this.onClick = 'addPoint';
-                const pointer = EditorPoint.newPoint(Cx_1.Cx.makeNew(0), pointsColor, true);
+                const pointer = EditorPoint.newPoint(this.g.mousePosCx, true);
                 this.objects.push(pointer);
+                Drawing_1.Draw.editor(this.g);
         }
     }
     /**
@@ -39,9 +46,10 @@ class Editor {
     click() {
         switch (this.onClick) {
             case 'none':
+                this.checkForClickedObjects();
                 return;
             case 'addPoint':
-                this.clickToMakePoint();
+                this.placePointAtCursor();
                 return;
         }
     }
@@ -55,12 +63,33 @@ class Editor {
      * Adds a point at the cursor position
      * @returns void
      */
-    clickToMakePoint() {
+    placePointAtCursor() {
         if (this.cursor) {
+            this.cursor.style = pointStyle;
             this.cursor.pointer = false;
+            this.onClick = 'none';
+            Drawing_1.Draw.editor(this.g);
         }
         else {
             throw new Error('Tried to make a point but the cursor doesn\'t exist');
+        }
+    }
+    /**
+   * Runs through the objects to see which ones
+   * are clicked and takes action accordingly
+   * @returns void
+   */
+    checkForClickedObjects() {
+        const mousePos = this.g.mousePosCx;
+        const clicks = this.objects.map((o) => o.closeTo(mousePos, this.g));
+        const clicked = clicks.indexOf(true);
+        if (clicked > -1) {
+            const clickedObject = this.objects[clicked];
+            // remove the pointer
+            this.objects = this.objects.filter((o) => !o.pointer);
+            clickedObject.pointer = true;
+            clickedObject.style = cursorPointStyle;
+            this.onClick = 'addPoint';
         }
     }
     /**
@@ -70,7 +99,7 @@ class Editor {
      * @returns void
      */
     createPoint(pos, color) {
-        this.objects.push(EditorPoint.newPoint(pos, color));
+        this.objects.push(EditorPoint.newPoint(pos));
         Drawing_1.Draw.editor(this.g);
     }
     /**
@@ -118,6 +147,22 @@ class EditorObject {
         this.style = style;
         this.pointer = pointer;
     }
+    /**
+     *
+     * @param z a position on the screen
+     * @returns true if this is closeand this is not the pointer
+     * (within some tolerance...)
+     */
+    closeTo(z, { scale: scale }) {
+        if (this instanceof EditorPoint && !this.pointer) {
+            const dist = z.plus(this.pos.times(-1));
+            const tolerance = 0.005; // Square distance!!
+            return dist.absSq < tolerance;
+        }
+        else {
+            return false;
+        }
+    }
 }
 exports.EditorObject = EditorObject;
 /**
@@ -137,12 +182,15 @@ class EditorPoint extends EditorObject {
     /**
      *
      * @param pos position
-     * @param color color (we are using red rn)
      * @param pointer is this the cursor
+     * @param style style data, or default for a point
      * @returns an EditorPoint to be put in {@link Editor}.objects
      */
-    static newPoint(pos, color, pointer = false) {
-        return new EditorPoint({ color: color }, pos, pointer);
+    static newPoint(pos, pointer = false, style) {
+        if (!style) {
+            style = pointer ? cursorPointStyle : pointStyle;
+        }
+        return new EditorPoint(style, pos, pointer);
     }
 }
 exports.EditorPoint = EditorPoint;

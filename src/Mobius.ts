@@ -14,8 +14,8 @@ export class Mobius {
   matrix: CxMatrix;
   cong: boolean;
   /**
-   * @param {CxLikeMatrix} matrix
-   * @param {boolean} cong
+   * @param {CxLikeMatrix} matrix the matrix
+   * @param {boolean} cong does it flip orientation
    */
   constructor(matrix: CxLikeMatrix, cong: boolean) {
     // A mobius transformation is the matrix, then conjugation maybe
@@ -28,7 +28,7 @@ in order to avoid huge numbers around the north pole?
  */
   /**
    * Composition of Mobius tranformations.
-   * @param {Mobius} M2
+   * @param {Mobius} M2 another mobius
    * @return {Mobius} this o M2
    */
   times(M2: Mobius): Mobius {
@@ -75,14 +75,15 @@ in order to avoid huge numbers around the north pole?
   }
 
   /**
-   * Find the unique Mobius transformation such that
-   * z1 --> 0
-   * z2 --> a positive real number
+   *
    * TODO replace u by u.curvature
    * @param {Cx} z1 - Point 1
    * @param {Cx} z2 - Point 2
-   * @param {number} curvature
+   * @param {number} curvature u.curvature
    * @return {Mobius}
+   * Find the unique Mobius transformation such that
+   * z1 --> 0
+   * z2 --> a positive real number
    */
   static twoPoints(z1: Cx, z2: Cx, curvature: number): Mobius {
     const M1 = Mobius.find(z1, curvature); // sends z1 to 0
@@ -99,8 +100,8 @@ in order to avoid huge numbers around the north pole?
   }
 
   /**
-   * @param  {Cx} z
-   * @return {Cx}
+   * @param  {Cx} z a point
+   * @return {Cx} this * z
    */
   apply(z: Cx): Cx {
     let debugInfo = '';
@@ -136,8 +137,8 @@ in order to avoid huge numbers around the north pole?
   };
 
   /**
-   * Tell us if there is 0 or infty among the entries
-   * @return {boolean}
+   *
+   * @return {boolean} Tell us if there is 0 or infty among the entries
    */
   hasZeroOrInfty():boolean {
     let answer = false;
@@ -148,6 +149,7 @@ in order to avoid huge numbers around the north pole?
   }
   /**
  * Throws an error if all entries are zeroes
+ * @returns void
  */
   isZero():void {
     let answer = true;
@@ -161,26 +163,26 @@ in order to avoid huge numbers around the north pole?
 
 
   /**
-   * Finds the isometry that sends z to 0 and 0 to -z
+   *
+   * @param {CxLike} z z below
+   * @param {number} curvature - the curvature
+   * @return {Mobius} Finds the isometry that sends z to 0 and 0 to -z
    * If g is the curvature, this Mobius transformation is
    * x --> (x-z)/(\overline z * g * x + 1)
-   * @param {CxLike} z
-   * @param {number} curvature - the curvature
-   * @return {Mobius}
    */
   static find(z: CxLike, curvature: number): Mobius {
     z = Cx.makeNew(z);
     if (z.isInfty() && curvature > 0) {
       return new Mobius([[0, 1], [1, 0]], false);
     }
-    let deter = 1/(1 + z.absSq() * curvature);
+    let deter = 1/(1 + z.absSq * curvature);
     deter = Math.sqrt(deter);
     return new Mobius(Cx.matrix([[deter, z.times(-1).times(deter)],
       [z.cong().times(curvature * deter), deter]]), false);
   }
   /**
  * Makes readable
- * @return {string}
+ * @return {string} '[a+bi,c+di\n e+fi..]
  */
   toString() : string {
     const A = this.matrix.map((row) =>
@@ -191,7 +193,7 @@ in order to avoid huge numbers around the north pole?
   }
 
   /**
-   * @return {boolean}
+   * @return {boolean} is this the identity
  */
   isIdentity() : boolean {
     if (this.cong) {

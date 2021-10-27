@@ -11,7 +11,7 @@ export type orbiName = 'none'|'o'|'444';
 export class Thurston {
   /**
      *
-     * @param {orbiName} name
+     * @param {orbiName} name description
      * @param {number[]} lengths parameters. They depend on which shape
      * we take
      * @return {Polygon} a fundamental domain

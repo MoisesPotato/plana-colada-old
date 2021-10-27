@@ -17,7 +17,7 @@ const List_of_domains_1 = require("./List of domains");
  */
 class UniverseInfo {
     /**
-     * @param {orbiName} domain
+     * @param {orbiName} domain The shape of where we are
      * @param {number[]} lengths some parameters, depends
      * on shape
      */
@@ -31,6 +31,7 @@ class UniverseInfo {
     /**
      * Creates the polygon and walls
      * @param {string} label Orbifold notation?
+     * @returns void
      */
     makeDomain(label) {
         switch (label) {
@@ -53,6 +54,7 @@ class UniverseInfo {
     /**
      * A step of one frame.
      * Moves objects and walls
+     * @returns void
      */
     move() {
         const M = Mobius_1.Mobius.find(this.speed, this.curvature); // / sends speed to 0
@@ -67,6 +69,7 @@ class UniverseInfo {
    * Adds trees
    * @param {number} n - How many?
    * @param {number} spread - How far apart?
+   * @returns void
    */
     addRandomObjects(n, spread) {
         for (let i = 0; i < n; i++) {
@@ -76,14 +79,15 @@ class UniverseInfo {
         }
     }
     /**
-     * This is the norm of the differential of the Mobius transformation
+     *
+     * @param {Cx} z Where
+     * @return {number} This is the norm of the differential
+     * of the Mobius transformation
      * from 0 to z. I.e. If the thing is size 1 at the origin, it has size
      * localScale if it is at z.
-     * @param {Cx} z Where
-     * @return {number}
      */
     localScale(z) {
-        const S = 1 + z.absSq() * this.curvature;
+        const S = 1 + z.absSq * this.curvature;
         return Math.max(0, S);
     }
 }

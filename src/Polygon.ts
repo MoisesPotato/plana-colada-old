@@ -15,11 +15,11 @@ export class Polygon {
   clockwise: boolean;
   /**
    * Make a polygon from the list of walls and the list of transformations
-   * @param {Cx[]} vertices
+   * @param {Cx[]} vertices list of vertices
    * @param {Array.<Mobius>} transf  - Array of Mobius transformations
    * @param {Array.<Wall>} walls - Wall list. In clockwise order???
    * What if it's not orientable?!?!?
-   * @param {boolean} clockwise
+   * @param {boolean} clockwise is the enumeration clockwise
    */
   constructor(vertices: Cx[], transf: Array<Mobius>,
       walls: Array<Wall>, clockwise = true) {
@@ -33,11 +33,12 @@ export class Polygon {
 
 
   /**
- * A polygon from the list of vertices plus the transformations
+ *
  * @param {Array.<Cx>} vertices - Polygon vertices
  * @param {Array.<Mobius>} transf - transformations
  * @param {number} curvature - curvature?
- * @return {Polygon}
+ * @return {Polygon} A polygon from the
+ * list of vertices plus the transformations
  */
   static fromVerticesAndTransf(vertices: Array<Cx>,
       transf: Array<Mobius>,
@@ -70,9 +71,10 @@ export class Polygon {
 
   /**
    * Moves this polygon by the transformation M
-   * @param {Mobius} M
+   * @param {Mobius} M said transformation
+   * @returns void
    */
-  move(M: Mobius) {
+  move(M: Mobius):void {
     this.vertices.forEach((v, i) => this.vertices[i] = M.apply(v),
     );
     this.walls.forEach((w) => w.moveBy(M),
@@ -84,8 +86,9 @@ export class Polygon {
   /**
    * Transform according to the wall we crossed
    * @param {number} i which wall?
+   * @returns void
    */
-  crossWall(i: number) {
+  crossWall(i: number) :void {
     this.move(this.transf[i]);
   }
 
@@ -93,8 +96,9 @@ export class Polygon {
    * Check if we have crossed a wall, move the polygon accordingly
    * TODO: There are too many functions to do one thing
    * This assumes we've only crossed one wall.
+   * @returns void
    */
-  reset() {
+  reset():void {
     for (let wallcount = 0; wallcount < 10; wallcount++) {
       const i = Polygon.crossed(this);
       if (i != -1) {

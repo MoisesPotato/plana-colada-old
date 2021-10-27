@@ -58,7 +58,7 @@ export class Cx {
    * in order to throw descriptive errors
    * @return {Cx} this * z
    */
-  times(z: CxLike, debugInfo = ''): Cx {
+  times(z: CxLike, debugInfo: string = ''): Cx {
     if (typeof z == 'number') {
       z = Cx.makeNew(z);
     }
@@ -80,7 +80,7 @@ export class Cx {
   /**
    * @return {number} |this|^2
    */
-  absSq(): number {
+  get absSq(): number {
     return this.re * this.re + this.im * this.im;
   };
 
@@ -88,7 +88,7 @@ export class Cx {
    * @return {number} |this|
    */
   abs(): number {
-    return Math.sqrt(this.absSq());
+    return Math.sqrt(this.absSq);
   };
   /**
    * The principal argument
@@ -139,8 +139,8 @@ export class Cx {
    * @return {Cx} this^(-1)
    */
   inv(): Cx {
-    const absSq = this.absSq();
-    if (this.absSq() === 0) {
+    const absSq = this.absSq;
+    if (absSq === 0) {
       return Cx.infty();
     } else {
       return this.cong().times(Cx.makeNew(1 / absSq));
@@ -165,7 +165,7 @@ export class Cx {
    * @return {Cx} this^n
    */
   power(n: number): Cx {
-    let R2 = this.absSq();
+    let R2 = this.absSq;
     let a = this.arg();
     R2 = Math.pow(R2, n / 2);
     a = a * n;

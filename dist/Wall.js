@@ -45,9 +45,9 @@ class Wall {
         [this.isStraight, this.center, this.radius] = this.computeThings();
     }
     /**
-     * Is z on this wall?
+     *
      * @param {Cx} z - a point
-     * @return {boolean}
+     * @return {boolean} Is z on this wall?
      */
     onWall(z) {
         const translate = this.goesToOrigin.apply(z);
@@ -55,10 +55,10 @@ class Wall {
     }
     ;
     /**
-     * Is z ``over'' this wall? i.e. is the triangle
-     * z1-z2-z clcokwise?
+     *
      * @param {Cx} z - a point
-     * @return {boolean}
+     * @return {boolean} Is z ``over'' this wall? i.e. is the triangle
+     * z1-z2-z clcokwise?
      */
     isLeft(z) {
         const translate = this.goesToOrigin.apply(z);
@@ -67,6 +67,7 @@ class Wall {
     ;
     /**
      * Runs compute things and reassigns the values!!
+     * @returns void
      */
     recalculate() {
         [this.isStraight, this.center, this.radius] = this.computeThings();
@@ -109,6 +110,7 @@ class Wall {
     /**
      * The image under a Mobius tranformation
      * @param {Mobius} M - A transformation
+     * @returns void
      */
     moveBy(M) {
         this.goesToOrigin = this.goesToOrigin.times(M.inv());

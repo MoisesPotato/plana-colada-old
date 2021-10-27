@@ -403,7 +403,9 @@ function startTheGame(g : GameStatus): void {
  */
 function openEditor(g : GameStatus):void {
   const menu = document.getElementById('mainMenu') as HTMLElement;
+  const toolbar = document.getElementById('editorToolbar') as HTMLElement;
   menu.style.display = 'none';
+  toolbar.style.display = 'block';
   g.setGameDimensions();
   g.drawBackground();
   g.scene = 'editor';

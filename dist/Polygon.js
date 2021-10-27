@@ -12,11 +12,11 @@ const Wall_1 = require("./Wall");
 class Polygon {
     /**
      * Make a polygon from the list of walls and the list of transformations
-     * @param {Cx[]} vertices
+     * @param {Cx[]} vertices list of vertices
      * @param {Array.<Mobius>} transf  - Array of Mobius transformations
      * @param {Array.<Wall>} walls - Wall list. In clockwise order???
      * What if it's not orientable?!?!?
-     * @param {boolean} clockwise
+     * @param {boolean} clockwise is the enumeration clockwise
      */
     constructor(vertices, transf, walls, clockwise = true) {
         // Z is an array of the vertices, and T[i] is the Mobius transformation
@@ -27,11 +27,12 @@ class Polygon {
         this.clockwise = clockwise;
     }
     /**
-   * A polygon from the list of vertices plus the transformations
+   *
    * @param {Array.<Cx>} vertices - Polygon vertices
    * @param {Array.<Mobius>} transf - transformations
    * @param {number} curvature - curvature?
-   * @return {Polygon}
+   * @return {Polygon} A polygon from the
+   * list of vertices plus the transformations
    */
     static fromVerticesAndTransf(vertices, transf, curvature) {
         // Z is an array of the vertices, and T[i] is the Mobius transformation
@@ -58,7 +59,8 @@ class Polygon {
     }
     /**
      * Moves this polygon by the transformation M
-     * @param {Mobius} M
+     * @param {Mobius} M said transformation
+     * @returns void
      */
     move(M) {
         this.vertices.forEach((v, i) => this.vertices[i] = M.apply(v));
@@ -68,6 +70,7 @@ class Polygon {
     /**
      * Transform according to the wall we crossed
      * @param {number} i which wall?
+     * @returns void
      */
     crossWall(i) {
         this.move(this.transf[i]);
@@ -76,6 +79,7 @@ class Polygon {
      * Check if we have crossed a wall, move the polygon accordingly
      * TODO: There are too many functions to do one thing
      * This assumes we've only crossed one wall.
+     * @returns void
      */
     reset() {
         for (let wallcount = 0; wallcount < 10; wallcount++) {
