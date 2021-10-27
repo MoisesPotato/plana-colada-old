@@ -1,12 +1,9 @@
 import {Cx} from './Cx';
+import {Draw} from './Drawing';
+import {GameStatus} from './GameStatus';
 
 type clickAction = 'none'|'addPoint';
 
-type mouse = {
-    pos: [number, number],
-    lClick: boolean,
-    rClick: boolean
-}
 
 /**
  * @property {editorObject[]} objects list of drawn stuff
@@ -14,12 +11,12 @@ type mouse = {
 export class Editor {
   objects : EditorObject[];
   onClick : clickAction;
-  mouse: mouse;
+  g: GameStatus;
 
-  constructor(objects: EditorObject[], onClick: clickAction, mouse:mouse) {
+  constructor(objects: EditorObject[], onClick: clickAction, g:GameStatus) {
     this.objects = objects;
     this.onClick = onClick;
-    this.mouse = mouse;
+    this.g = g;
   }
 
 
@@ -31,6 +28,7 @@ export class Editor {
   clickButton(buttonID:string):void {
     switch (buttonID) {
       case 'addPoint':
+        console.log('clicked');
         this.onClick = 'addPoint';
     }
   }
@@ -54,20 +52,29 @@ export class Editor {
    * @returns void
    */
   clickPoint():void {
-    const position = this.mouse.pos;
+    const position = this.g.pixToCoord( this.g.mouse.pos[0],
+        this.g.mouse.pos[1] );
+    this.addPoint(position, '#ff0000');
   }
 
   /**
    * adds a point at position t
    * @param pos position
+   * @param color color (#ffffff)
    * @returns void
    */
-  addPoint(pos:Cx):void {
-
+  addPoint(pos:Cx, color:string):void {
+    this.objects.push(EditorPoint.newPoint(pos, color));
+    Draw.editor(this.g);
   }
 
-  static start():Editor {
-    return new Editor([], 'none', {pos: [0, 0], lClick: false, rClick: false});
+  /**
+   *
+   * @param g g
+   * @returns a new instance of Editor
+   */
+  static start(g:GameStatus):Editor {
+    return new Editor([], 'none', g);
   }
 }
 
@@ -80,5 +87,18 @@ export class EditorObject {
 
   constructor(style: editorStyle) {
     this.style = style;
+  }
+}
+
+export class EditorPoint extends EditorObject {
+  pos:Cx;
+
+  constructor(style:editorStyle, pos: Cx) {
+    super(style);
+    this.pos = pos;
+  }
+
+  static newPoint(pos:Cx, color:string):EditorPoint {
+    return new EditorPoint({color: color}, pos);
   }
 }

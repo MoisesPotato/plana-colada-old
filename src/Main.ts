@@ -168,20 +168,16 @@ function setKeyListeners(g: GameStatus):void {
   g.area.addEventListener('mousedown', function(e) {
     if (e.button === 0) {
       g.mouse.lClick = true;
-      g.editor.mouse.lClick = true;
     } else if (e.button == 2) {
       g.mouse.rClick = true;
-      g.editor.mouse.rClick = true;
     }
   });
 
   g.area.addEventListener('mouseup', function(e) {
     if (e.button === 0) {
       g.mouse.lClick = false;
-      g.editor.mouse.lClick = false;
     } else if (e.button == 2) {
       g.mouse.rClick = false;
-      g.editor.mouse.rClick = false;
     }
   });
 
@@ -195,10 +191,12 @@ function setKeyListeners(g: GameStatus):void {
     g.mouse.pos = position;
   });
 
-  g.area.addEventListener('click', g.editor.click);
+  g.area.addEventListener('click', () => {
+    g.editor.click();
+  });
 
   const editorButtons = document.getElementsByClassName('editorButton');
-  Array(editorButtons.length).forEach((_, i) => {
+  Array(editorButtons.length).fill(0).forEach((_, i) => {
     editorButtons[i].addEventListener('click', function() {
       g.editor.clickButton(editorButtons[i].id);
     });
@@ -381,6 +379,8 @@ function playAnim(g: GameStatus, u: UniverseInfo) {
 function startTheGame(g : GameStatus): void {
   const menu = document.getElementById('mainMenu') as HTMLElement;
   menu.style.display = 'none';
+  g.scene = 'start';
+  g.setGameDimensions();
   const u = new UniverseInfo(testingParams.shape,
       testingParams.lenghts);
   makeChangeable(u.curvature, 'g_input');
@@ -388,7 +388,6 @@ function startTheGame(g : GameStatus): void {
   g.drawBackground();
   g.playing = true;
   then = Date.now();
-  g.scene = 'start';
   playAnim(g, u);
 }
 
@@ -400,6 +399,7 @@ function startTheGame(g : GameStatus): void {
 function openEditor(g : GameStatus):void {
   const menu = document.getElementById('mainMenu') as HTMLElement;
   menu.style.display = 'none';
+  g.setGameDimensions();
   g.drawBackground();
   g.scene = 'editor';
 }

@@ -56,7 +56,7 @@ class GameStatus {
         this.speedScale = 1 / 40;
         this.defaultSpeed = 0.01;
         this.then = 0;
-        this.editor = Editor_1.Editor.start();
+        this.editor = Editor_1.Editor.start(this);
     }
     /**
      * // TODO rename to pixToZ
@@ -152,13 +152,19 @@ class GameStatus {
      */
     setGameDimensions() {
         const aspectRatio = 16 / 9;
-        if (window.innerHeight * aspectRatio >= window.innerWidth) {
-            this.gameWidth = window.innerWidth;
-            this.gameHeight = this.gameWidth / aspectRatio;
+        if (this.scene == 'start') {
+            if (window.innerHeight * aspectRatio >= window.innerWidth) {
+                this.gameWidth = window.innerWidth;
+                this.gameHeight = this.gameWidth / aspectRatio;
+            }
+            else {
+                this.gameHeight = window.innerHeight;
+                this.gameWidth = this.gameHeight * aspectRatio;
+            }
         }
         else {
+            this.gameWidth = window.innerWidth;
             this.gameHeight = window.innerHeight;
-            this.gameWidth = this.gameHeight * aspectRatio;
         }
         this.area.width = this.gameWidth;
         this.area.height = this.gameHeight;

@@ -1,14 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EditorObject = exports.Editor = void 0;
+exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
+const Drawing_1 = require("./Drawing");
 /**
  * @property {editorObject[]} objects list of drawn stuff
  */
 class Editor {
-    constructor(objects, onClick, mouse) {
+    constructor(objects, onClick, g) {
         this.objects = objects;
         this.onClick = onClick;
-        this.mouse = mouse;
+        this.g = g;
     }
     /**
      * Changes the status depending on the pressed button
@@ -18,6 +19,7 @@ class Editor {
     clickButton(buttonID) {
         switch (buttonID) {
             case 'addPoint':
+                console.log('clicked');
                 this.onClick = 'addPoint';
         }
     }
@@ -39,17 +41,26 @@ class Editor {
      * @returns void
      */
     clickPoint() {
-        const position = this.mouse.pos;
+        const position = this.g.pixToCoord(this.g.mouse.pos[0], this.g.mouse.pos[1]);
+        this.addPoint(position, '#ff0000');
     }
     /**
      * adds a point at position t
      * @param pos position
+     * @param color color (#ffffff)
      * @returns void
      */
-    addPoint(pos) {
+    addPoint(pos, color) {
+        this.objects.push(EditorPoint.newPoint(pos, color));
+        Drawing_1.Draw.editor(this.g);
     }
-    static start() {
-        return new Editor([], 'none', { pos: [0, 0], lClick: false, rClick: false });
+    /**
+     *
+     * @param g g
+     * @returns a new instance of Editor
+     */
+    static start(g) {
+        return new Editor([], 'none', g);
     }
 }
 exports.Editor = Editor;
@@ -59,3 +70,13 @@ class EditorObject {
     }
 }
 exports.EditorObject = EditorObject;
+class EditorPoint extends EditorObject {
+    constructor(style, pos) {
+        super(style);
+        this.pos = pos;
+    }
+    static newPoint(pos, color) {
+        return new EditorPoint({ color: color }, pos);
+    }
+}
+exports.EditorPoint = EditorPoint;

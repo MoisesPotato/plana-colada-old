@@ -5,6 +5,7 @@ exports.Draw = void 0;
 const Cx_1 = require("./Cx");
 // import {Polygon} from './Polygon';
 const Thing_1 = require("./Thing");
+const Editor_1 = require("./Editor");
 // ////////////////////////DRAWING //////
 const images = {
     imgCar: new Image(),
@@ -192,14 +193,21 @@ class Draw {
      */
     static editor(g) {
         g.drawBackground();
-        g.editor.objects.forEach((o) => Draw.editorObj(o));
+        g.editor.objects.forEach((o) => Draw.editorObj(o, g));
     }
     /**
    * draws something on the editor
    * @param o an editor object
    * @returns void
    */
-    static editorObj(o) {
+    static editorObj(o, g) {
+        if (o instanceof Editor_1.EditorPoint) {
+            const [x, y] = g.coordToPix(o.pos);
+            g.ctx.beginPath();
+            g.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            g.ctx.fillStyle = o.style.color;
+            g.ctx.fill();
+        }
     }
 }
 exports.Draw = Draw;

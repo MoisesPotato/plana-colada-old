@@ -9,7 +9,7 @@ import {Mobius} from './Mobius';
 import {UniverseInfo} from './UniverseInfo';
 import {Wall} from './Wall';
 import {Polygon} from './Polygon';
-import {EditorObject} from './Editor';
+import {EditorObject, EditorPoint} from './Editor';
 
 // ////////////////////////DRAWING //////
 
@@ -234,7 +234,7 @@ export class Draw {
    */
   static editor(g:GameStatus):void {
     g.drawBackground();
-    g.editor.objects.forEach((o) => Draw.editorObj(o));
+    g.editor.objects.forEach((o) => Draw.editorObj(o, g));
   }
 
 
@@ -243,7 +243,13 @@ export class Draw {
  * @param o an editor object
  * @returns void
  */
-  static editorObj(o:EditorObject):void {
-
+  static editorObj(o:EditorObject, g:GameStatus):void {
+    if (o instanceof EditorPoint) {
+      const [x, y] = g.coordToPix(o.pos);
+      g.ctx.beginPath();
+      g.ctx.arc(x, y, 3, 0, 2*Math.PI);
+      g.ctx.fillStyle = o.style.color;
+      g.ctx.fill();
+    }
   }
 }

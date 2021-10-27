@@ -293,6 +293,7 @@ exports.Draw = void 0;
 const Cx_1 = require("./Cx");
 // import {Polygon} from './Polygon';
 const Thing_1 = require("./Thing");
+const Editor_1 = require("./Editor");
 // ////////////////////////DRAWING //////
 const images = {
     imgCar: new Image(),
@@ -480,30 +481,38 @@ class Draw {
      */
     static editor(g) {
         g.drawBackground();
-        g.editor.objects.forEach((o) => Draw.editorObj(o));
+        g.editor.objects.forEach((o) => Draw.editorObj(o, g));
     }
     /**
    * draws something on the editor
    * @param o an editor object
    * @returns void
    */
-    static editorObj(o) {
+    static editorObj(o, g) {
+        if (o instanceof Editor_1.EditorPoint) {
+            const [x, y] = g.coordToPix(o.pos);
+            g.ctx.beginPath();
+            g.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            g.ctx.fillStyle = o.style.color;
+            g.ctx.fill();
+        }
     }
 }
 exports.Draw = Draw;
 
-},{"./Cx":2,"./Thing":11}],4:[function(require,module,exports){
+},{"./Cx":2,"./Editor":4,"./Thing":11}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EditorObject = exports.Editor = void 0;
+exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
+const Drawing_1 = require("./Drawing");
 /**
  * @property {editorObject[]} objects list of drawn stuff
  */
 class Editor {
-    constructor(objects, onClick, mouse) {
+    constructor(objects, onClick, g) {
         this.objects = objects;
         this.onClick = onClick;
-        this.mouse = mouse;
+        this.g = g;
     }
     /**
      * Changes the status depending on the pressed button
@@ -513,6 +522,7 @@ class Editor {
     clickButton(buttonID) {
         switch (buttonID) {
             case 'addPoint':
+                console.log('clicked');
                 this.onClick = 'addPoint';
         }
     }
@@ -534,17 +544,26 @@ class Editor {
      * @returns void
      */
     clickPoint() {
-        const position = this.mouse.pos;
+        const position = this.g.pixToCoord(this.g.mouse.pos[0], this.g.mouse.pos[1]);
+        this.addPoint(position, '#ff0000');
     }
     /**
      * adds a point at position t
      * @param pos position
+     * @param color color (#ffffff)
      * @returns void
      */
-    addPoint(pos) {
+    addPoint(pos, color) {
+        this.objects.push(EditorPoint.newPoint(pos, color));
+        Drawing_1.Draw.editor(this.g);
     }
-    static start() {
-        return new Editor([], 'none', { pos: [0, 0], lClick: false, rClick: false });
+    /**
+     *
+     * @param g g
+     * @returns a new instance of Editor
+     */
+    static start(g) {
+        return new Editor([], 'none', g);
     }
 }
 exports.Editor = Editor;
@@ -554,8 +573,18 @@ class EditorObject {
     }
 }
 exports.EditorObject = EditorObject;
+class EditorPoint extends EditorObject {
+    constructor(style, pos) {
+        super(style);
+        this.pos = pos;
+    }
+    static newPoint(pos, color) {
+        return new EditorPoint({ color: color }, pos);
+    }
+}
+exports.EditorPoint = EditorPoint;
 
-},{}],5:[function(require,module,exports){
+},{"./Drawing":3}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameStatus = void 0;
@@ -614,7 +643,7 @@ class GameStatus {
         this.speedScale = 1 / 40;
         this.defaultSpeed = 0.01;
         this.then = 0;
-        this.editor = Editor_1.Editor.start();
+        this.editor = Editor_1.Editor.start(this);
     }
     /**
      * // TODO rename to pixToZ
@@ -710,13 +739,19 @@ class GameStatus {
      */
     setGameDimensions() {
         const aspectRatio = 16 / 9;
-        if (window.innerHeight * aspectRatio >= window.innerWidth) {
-            this.gameWidth = window.innerWidth;
-            this.gameHeight = this.gameWidth / aspectRatio;
+        if (this.scene == 'start') {
+            if (window.innerHeight * aspectRatio >= window.innerWidth) {
+                this.gameWidth = window.innerWidth;
+                this.gameHeight = this.gameWidth / aspectRatio;
+            }
+            else {
+                this.gameHeight = window.innerHeight;
+                this.gameWidth = this.gameHeight * aspectRatio;
+            }
         }
         else {
+            this.gameWidth = window.innerWidth;
             this.gameHeight = window.innerHeight;
-            this.gameWidth = this.gameHeight * aspectRatio;
         }
         this.area.width = this.gameWidth;
         this.area.height = this.gameHeight;
@@ -1088,21 +1123,17 @@ function setKeyListeners(g) {
     g.area.addEventListener('mousedown', function (e) {
         if (e.button === 0) {
             g.mouse.lClick = true;
-            g.editor.mouse.lClick = true;
         }
         else if (e.button == 2) {
             g.mouse.rClick = true;
-            g.editor.mouse.rClick = true;
         }
     });
     g.area.addEventListener('mouseup', function (e) {
         if (e.button === 0) {
             g.mouse.lClick = false;
-            g.editor.mouse.lClick = false;
         }
         else if (e.button == 2) {
             g.mouse.rClick = false;
-            g.editor.mouse.rClick = false;
         }
     });
     g.area.addEventListener('contextmenu', function (e) {
@@ -1113,9 +1144,11 @@ function setKeyListeners(g) {
         g.mouse.pos = position;
         g.mouse.pos = position;
     });
-    g.area.addEventListener('click', g.editor.click);
+    g.area.addEventListener('click', () => {
+        g.editor.click();
+    });
     const editorButtons = document.getElementsByClassName('editorButton');
-    Array(editorButtons.length).forEach((_, i) => {
+    Array(editorButtons.length).fill(0).forEach((_, i) => {
         editorButtons[i].addEventListener('click', function () {
             g.editor.clickButton(editorButtons[i].id);
         });
@@ -1288,13 +1321,14 @@ function playAnim(g, u) {
 function startTheGame(g) {
     const menu = document.getElementById('mainMenu');
     menu.style.display = 'none';
+    g.scene = 'start';
+    g.setGameDimensions();
     const u = new UniverseInfo_1.UniverseInfo(testingParams.shape, testingParams.lenghts);
     makeChangeable(u.curvature, 'g_input');
     u.addRandomObjects(150, 3);
     g.drawBackground();
     g.playing = true;
     then = Date.now();
-    g.scene = 'start';
     playAnim(g, u);
 }
 /**
@@ -1305,6 +1339,7 @@ function startTheGame(g) {
 function openEditor(g) {
     const menu = document.getElementById('mainMenu');
     menu.style.display = 'none';
+    g.setGameDimensions();
     g.drawBackground();
     g.scene = 'editor';
 }
