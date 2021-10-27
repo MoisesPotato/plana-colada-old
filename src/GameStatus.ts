@@ -52,6 +52,7 @@ export class GameStatus {
   defaultSpeed: number;
   then : number;
   editor :Editor;
+  curvature: number;
   /**
    */
   constructor() {
@@ -87,7 +88,8 @@ export class GameStatus {
     this.speedScale = 1 / 40;
     this.defaultSpeed = 0.01;
     this.then = 0;
-    this.editor = Editor.start(this);
+    this.editor = Editor.start(this, 1);
+    this.curvature = 1;
   }
 
   /**

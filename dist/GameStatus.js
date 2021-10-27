@@ -56,7 +56,8 @@ class GameStatus {
         this.speedScale = 1 / 40;
         this.defaultSpeed = 0.01;
         this.then = 0;
-        this.editor = Editor_1.Editor.start(this);
+        this.editor = Editor_1.Editor.start(this, 1);
+        this.curvature = 1;
     }
     /**
      * // TODO rename to pixToZ

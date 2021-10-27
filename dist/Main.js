@@ -365,6 +365,7 @@ function startTheGame(g) {
     g.scene = 'start';
     g.setGameDimensions();
     const u = new UniverseInfo_1.UniverseInfo(testingParams.shape, testingParams.lenghts);
+    g.curvature = u.curvature;
     makeChangeable(u.curvature, 'g_input');
     u.addRandomObjects(150, 3);
     g.drawBackground();
@@ -383,6 +384,29 @@ function openEditor(g) {
     menu.style.display = 'none';
     toolbar.style.display = 'block';
     g.setGameDimensions();
-    g.drawBackground();
     g.scene = 'editor';
+    then = Date.now();
+    drawEditorLoop(g);
+}
+/**
+ * Play a step in the animation
+ * or wait some more
+ * TODO make it not recursive???
+ * @param {GameStatus} g g
+ * @returns {void}
+ */
+function drawEditorLoop(g) {
+    const currTime = Date.now();
+    if (currTime - then > g.msPerFrame && g.scene == 'editor') {
+        then = Date.now();
+        Drawing_1.Draw.editor(g);
+        window.requestAnimationFrame(function () {
+            drawEditorLoop(g);
+        });
+    }
+    else {
+        window.requestAnimationFrame(function () {
+            drawEditorLoop(g);
+        });
+    }
 }

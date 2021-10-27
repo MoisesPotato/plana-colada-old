@@ -38,6 +38,11 @@ class Wall {
      * @param {number} curvature - u.curvature
      */
     constructor(z1, z2, curvature) {
+        if (z1.compare(z2)) {
+            z2 = z2.plus(0.1);
+        }
+        this.start = z1;
+        this.end = z2;
         this.goesToOrigin = Mobius_1.Mobius.twoPoints(z1, z2, curvature);
         this.originToWall = this.goesToOrigin.inv();
         this.curvature = curvature;

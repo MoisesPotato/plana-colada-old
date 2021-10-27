@@ -29,6 +29,8 @@ import {Mobius} from './Mobius';
  * @property {UniverseInfo} u - the universe we are in
  */
 export class Wall {
+  start: Cx;
+  end: Cx;
   goesToOrigin: Mobius;
   originToWall: Mobius;
   curvature: number;
@@ -42,6 +44,11 @@ export class Wall {
    * @param {number} curvature - u.curvature
    */
   constructor(z1: Cx, z2: Cx, curvature: number) {
+    if (z1.compare(z2)) {
+      z2 = z2.plus(0.1);
+    }
+    this.start = z1;
+    this.end = z2;
     this.goesToOrigin = Mobius.twoPoints(z1, z2, curvature);
     this.originToWall = this.goesToOrigin.inv();
     this.curvature = curvature;

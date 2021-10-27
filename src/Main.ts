@@ -292,7 +292,7 @@ TODO rename the word Mobius from these functions!!
  * @param {UniverseInfo} u u
  * @returns {void}
  */
-function playAnim(g: GameStatus, u: UniverseInfo) {
+function playAnim(g: GameStatus, u: UniverseInfo): void {
   const currTime = Date.now();
   if (currTime - then > g.msPerFrame && g.playing && !g.paused) {
     then = Date.now();
@@ -388,6 +388,7 @@ function startTheGame(g : GameStatus): void {
   g.setGameDimensions();
   const u = new UniverseInfo(testingParams.shape,
       testingParams.lenghts);
+  g.curvature = u.curvature;
   makeChangeable(u.curvature, 'g_input');
   u.addRandomObjects(150, 3);
   g.drawBackground();
@@ -407,8 +408,30 @@ function openEditor(g : GameStatus):void {
   menu.style.display = 'none';
   toolbar.style.display = 'block';
   g.setGameDimensions();
-  g.drawBackground();
   g.scene = 'editor';
+  then = Date.now();
+  drawEditorLoop(g);
 }
 
 
+/**
+ * Play a step in the animation
+ * or wait some more
+ * TODO make it not recursive???
+ * @param {GameStatus} g g
+ * @returns {void}
+ */
+function drawEditorLoop(g: GameStatus): void {
+  const currTime = Date.now();
+  if (currTime - then > g.msPerFrame && g.scene == 'editor') {
+    then = Date.now();
+    Draw.editor(g);
+    window.requestAnimationFrame(function() {
+      drawEditorLoop(g);
+    });
+  } else {
+    window.requestAnimationFrame(function() {
+      drawEditorLoop(g);
+    });
+  }
+}
