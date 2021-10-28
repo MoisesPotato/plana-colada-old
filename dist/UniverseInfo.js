@@ -81,13 +81,14 @@ class UniverseInfo {
     /**
      *
      * @param {Cx} z Where
+     * @param curvature the curvature
      * @return {number} This is the norm of the differential
      * of the Mobius transformation
      * from 0 to z. I.e. If the thing is size 1 at the origin, it has size
      * localScale if it is at z.
      */
-    localScale(z) {
-        const S = 1 + z.absSq * this.curvature;
+    static localScale(z, curvature) {
+        const S = 1 + z.absSq * curvature;
         return Math.max(0, S);
     }
 }

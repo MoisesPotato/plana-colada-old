@@ -2,8 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EditorEdge = exports.EditorPoint = exports.EditorObject = exports.Editor = void 0;
 const Cx_1 = require("./Cx");
+const Mobius_1 = require("./Mobius");
+const UniverseInfo_1 = require("./UniverseInfo");
+// TODO mouse wheel scale
+// TODO show equator
+// TODO fix hyperbolic stuff (prevent placing points outside of the universe)
 const pointStyle = {
     color: '#ff0000',
+    radius: 3,
+    label: '',
+    fill: true,
+};
+const hoverPointStyle = {
+    color: '#0000ff',
     radius: 3,
     label: '',
     fill: true,
@@ -28,6 +39,18 @@ const endingEdgeStyle = {
 };
 const lineStyle = {
     color: 'black',
+    radius: 0,
+    label: '',
+    fill: false,
+};
+const hoverLineStyle = {
+    color: 'blue',
+    radius: 0,
+    label: '',
+    fill: false,
+};
+const selectedLineStyle = {
+    color: 'yellow',
     radius: 0,
     label: '',
     fill: false,
@@ -65,11 +88,11 @@ class Editor {
     clickButton(buttonID) {
         switch (buttonID) {
             case 'addPoint':
-                this.onClick = 'addPoint';
+                this.setAction('addPoint');
                 this.cursorGrabsNewPoint(cursorPointStyle);
                 break;
             case 'addEdge':
-                this.onClick = 'addEdgeStart';
+                this.setAction('addEdgeStart');
                 this.cursorGrabsNewPoint(startingEdgeStyle);
                 break;
         }
@@ -91,6 +114,9 @@ class Editor {
         switch (this.onClick) {
             case 'none':
                 this.selectPointByClick();
+                if (this.onClick == 'none') {
+                    this.selectEdgeByClick();
+                }
                 return;
             case 'addPoint':
                 this.placePointAtCursor();
@@ -100,7 +126,30 @@ class Editor {
                 return;
             case 'addEdgeEnd':
                 this.endEdgeAtCursor();
+                return;
+            case 'glueEdge':
+                const clicked = this.findClicked('edge');
+                const edge1 = this.lines.find((o) => o.selected);
+                if (!edge1) {
+                    throw new Error('No edge selected!');
+                }
+                if (clicked > -1) {
+                    this.glueEdges(edge1, this.lines[clicked]);
+                }
+                edge1.selected = false;
+                edge1.style = lineStyle;
+                this.setAction('none');
         }
+    }
+    /**
+     * identifies them together
+     * @param e1 edge
+     * @param e2 edge
+     * @return void
+     */
+    glueEdges(e1, e2) {
+        e1.glued = e2;
+        e2.glued = e1;
     }
     /**
      * Creates a new edge with starting vertex at the cursor.
@@ -125,7 +174,7 @@ class Editor {
         v1.style = pointStyle;
         const v2 = this.cursor;
         this.lines.push(EditorEdge.fromEndPoints(v1, v2, this));
-        this.onClick = 'addEdgeEnd';
+        this.setAction('addEdgeEnd');
     }
     /**
    * Drops the current point in place
@@ -144,7 +193,7 @@ class Editor {
             this.cursor.style = pointStyle;
             this.cursor.pointer = false;
         }
-        this.onClick = 'none';
+        this.setAction('none');
     }
     /**
    *
@@ -185,6 +234,35 @@ class Editor {
         return returnList;
     }
     /**
+     * Changes the onclick property and the message
+     * in the help box
+     * @param a the action
+     * @returns void
+     */
+    setAction(a) {
+        this.onClick = a;
+        let message = '';
+        switch (a) {
+            case 'none':
+                message = 'Click on button, a dot or an edge.';
+                break;
+            case 'addPoint':
+                message = 'Click where you would like to place the point.';
+                break;
+            case 'addEdgeStart':
+                message = 'Click where you would like the new line to start.';
+                break;
+            case 'addEdgeEnd':
+                message = 'Click where you would like the new line to end.';
+                break;
+            case 'glueEdge':
+                message = 'Click on the edge to identify this with';
+                break;
+        }
+        const help = document.getElementById('editorHelp');
+        help.innerHTML = message;
+    }
+    /**
    *
    * @param type are we looking for just points/edges or any
    * @returns the index of the first object that is clicked, or -1
@@ -216,14 +294,45 @@ class Editor {
         if (this.cursor) {
             this.cursor.style = pointStyle;
             this.cursor.pointer = false;
-            this.onClick = 'none';
+            this.setAction('none');
         }
         else {
             throw new Error('Tried to make a point but the cursor doesn\'t exist');
         }
     }
     /**
-   * Runs through the objects to see which ones
+   * Runs through the edges to see which ones
+   * are clicked and takes action accordingly
+   * @returns void
+   */
+    selectEdgeByClick() {
+        const clicked = this.findClicked('edge');
+        if (clicked > -1) {
+            this.setAction('glueEdge');
+            const e = this.lines[clicked];
+            e.selected = true;
+            e.style = selectedLineStyle;
+            if (e.glued) {
+                const otherEdge = this.findPartner(e);
+                otherEdge.glued = false;
+                e.glued = false;
+            }
+        }
+    }
+    /**
+   *
+   * @param e an edge
+   * @returns the edge it is glued to, or nothing
+   */
+    findPartner(e) {
+        const partner = this.lines.find((l) => l.glued == e);
+        if (!partner) {
+            throw new Error('Edge not glued!');
+        }
+        return partner;
+    }
+    /**
+   * Runs through the points to see which ones
    * are clicked and takes action accordingly
    * @returns void
    */
@@ -231,7 +340,7 @@ class Editor {
         const clicked = this.findClicked('point');
         if (clicked > -1) {
             this.pickUpPoint(clicked);
-            this.onClick = 'addPoint';
+            this.setAction('addPoint');
         }
     }
     /**
@@ -278,9 +387,39 @@ class Editor {
    */
     mouseMove() {
         window.requestAnimationFrame(() => {
+            const mouse = this.g.mousePosCx;
             if (this.cursor) {
-                this.cursor.pos = this.g.mousePosCx;
+                this.cursor.pos = mouse;
             }
+            let foundHovered = false;
+            this.points.forEach((p) => {
+                if (!p.pointer) {
+                    if (foundHovered) {
+                        p.style = pointStyle;
+                    }
+                    else if (p.closeTo(mouse, this.g)) {
+                        p.style = hoverPointStyle;
+                        foundHovered = true;
+                    }
+                    else {
+                        p.style = pointStyle;
+                    }
+                }
+            });
+            this.lines.forEach((e) => {
+                if (!e.selected) {
+                    if (foundHovered) {
+                        e.style = lineStyle;
+                    }
+                    else if (e.closeTo(mouse, this.g)) {
+                        e.style = hoverLineStyle;
+                        foundHovered = true;
+                    }
+                    else {
+                        e.style = lineStyle;
+                    }
+                }
+            });
         });
     }
 }
@@ -308,11 +447,18 @@ class EditorObject {
      * @returns true if this is closeand this is not the pointer
      * (within some tolerance...)
      */
-    closeTo(z, { scale: scale }) {
+    closeTo(z, { scale: scale, curvature: curvature }) {
         if (this instanceof EditorPoint && !this.pointer) {
             const dist = z.plus(this.pos.times(-1));
             const tolerance = 0.005; // Square distance!!
             return dist.absSq < tolerance;
+        }
+        else if (this instanceof EditorEdge) {
+            const M = Mobius_1.Mobius.twoPoints(this.start.pos, this.end.pos, curvature);
+            const z2 = M.apply(z);
+            const tolerance = 0.05;
+            return Math.abs(z2.im) < tolerance /
+                UniverseInfo_1.UniverseInfo.localScale(z, curvature);
         }
         else {
             return false;
@@ -370,6 +516,8 @@ class EditorEdge extends EditorObject {
         super(pos, style, pointer);
         this.start = start;
         this.end = end;
+        this.selected = false;
+        this.glued = false;
     }
     /**
    *

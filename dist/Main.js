@@ -381,8 +381,10 @@ function startTheGame(g) {
 function openEditor(g) {
     const menu = document.getElementById('mainMenu');
     const toolbar = document.getElementById('editorToolbar');
+    const help = document.getElementById('editorHelp');
     menu.style.display = 'none';
     toolbar.style.display = 'block';
+    help.style.display = 'block';
     g.setGameDimensions();
     g.scene = 'editor';
     then = Date.now();

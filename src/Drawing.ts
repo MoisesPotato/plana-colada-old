@@ -73,7 +73,7 @@ export class Draw {
    */
   static obj(o: Thing, g: GameStatus, u: UniverseInfo): void {
     // const V = g.coordToPix(o.pos);
-    let s = u.localScale(o.pos);
+    let s = UniverseInfo.localScale(o.pos, u.curvature);
     s = Math.min(s, 10);
     switch (o.type) {
       case 'Tree':
@@ -134,9 +134,10 @@ export class Draw {
  * Draw this on the canvas
  * @param {Wall} wall this wall
  * @param {GameStatus} g g
+ * @param color color optional
  * @returns {void}
  */
-  static wall(wall : Wall, g: GameStatus): void {
+  static wall(wall : Wall, g: GameStatus, color:string = 'black'): void {
     /* for (let x = -3; x < 3; x+= 0.1){SHADE THE WHOLE AREA
           for (let y = -3; y < 3; y+= 0.1){
               let z = new cx(x, y);
@@ -156,7 +157,7 @@ export class Draw {
       const [x2, y2] = g.coordToPix(wall.end);
       // const a1 = g.coordToPix(wall.originToWall.apply(Cx.makeNew(-100)));
       // const a2 = g.coordToPix(wall.originToWall.apply(Cx.makeNew(100)));
-      g.ctx.strokeStyle = 'black';
+      g.ctx.strokeStyle = color;
       g.ctx.beginPath();
       // g.ctx.moveTo(a1[0], a1[1]);
       // g.ctx.lineTo(a2[0], a2[1]);
@@ -166,7 +167,7 @@ export class Draw {
     } else {
       const x = g.coordToPix(wall.center);
       const r = wall.radius * g.scale;
-      g.ctx.strokeStyle = 'black';
+      g.ctx.strokeStyle = color;
       g.ctx.beginPath();
       const [an1, an2] = Draw.findSmallestAngle(
           Draw.findAngle(wall.center, wall.start, g),
@@ -303,7 +304,7 @@ export class Draw {
       g.ctx.fill();
     } else if (o instanceof EditorEdge) {
       const wall = new Wall(o.start.pos, o.end.pos, g.curvature);
-      Draw.wall(wall, g);
+      Draw.wall(wall, g, o.style.color);
     }
   }
 }
