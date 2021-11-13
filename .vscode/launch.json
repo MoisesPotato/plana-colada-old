@@ -49,6 +49,22 @@
             "webRoot": "${workspaceFolder}"
         },
         {
+            "name": "THE GOOD ONE",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "url": "${workspaceFolder}/index.html",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "palette",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "url": "~/Palette.html",
+            "webRoot": "/home/moises/"
+        },
+        {
             "name": "Launch WebExtension",
             "type": "firefox",
             "request": "launch",
